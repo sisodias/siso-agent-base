@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "update" ]]; then
+  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-update" "${@:2}"
+fi
+
+if [[ "${1:-}" == "doctor" ]]; then
+  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-doctor" "${@:2}"
+fi
+
+if [[ "${1:-}" == "version" ]]; then
+  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-version" "${@:2}"
+fi
+
+PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
+SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
+
+if [[ -f "$SECRETS_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$SECRETS_FILE"
+fi
+
+command -v pi >/dev/null 2>&1 || {
+  echo "siso: pi is not installed or not on PATH. Install Pi first, then rerun siso doctor." >&2
+  exit 127
+}
+
+export PI_CODING_AGENT_DIR="$PROFILE_DIR"
+export SISO_HOME="${SISO_HOME:-$HOME/.siso}"
+export SISO_AGENT_HOME="${SISO_AGENT_HOME:-$HOME/.siso/agent}"
+export SISO_GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
+
+MODEL="${SISO_MODEL:-claude-opus-4-7}"
+TOOLS="${SISO_TOOLS:-read,bash,edit,write,ls}"
+
+exec pi \
+  --provider bifrost-anthropic \
+  --model "$MODEL" \
+  --tools "$TOOLS" \
+  --no-skills \
+  --no-context-files \
+  "$@"
+

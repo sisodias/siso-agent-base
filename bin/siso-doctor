@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
+SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
+GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
+ANTHROPIC_URL="$GATEWAY_BASE/anthropic"
+OPENAI_URL="$GATEWAY_BASE/openai/v1/chat/completions"
+
+ok=1
+
+pass() { printf 'ok  - %s\n' "$*"; }
+warn() { printf 'warn - %s\n' "$*"; }
+bad() { printf 'fail - %s\n' "$*"; ok=0; }
+
+if command -v tailscale >/dev/null 2>&1; then
+  pass "tailscale command found"
+else
+  warn "tailscale command not found; install Tailscale if gateway is unreachable"
+fi
+
+if curl -fsSk --connect-timeout 5 --max-time 10 "$GATEWAY_BASE/health" >/dev/null 2>&1; then
+  pass "gateway health reachable"
+else
+  bad "gateway health unreachable: $GATEWAY_BASE/health"
+fi
+
+if [[ -f "$SECRETS_FILE" ]]; then
+  pass "secrets file exists"
+  # shellcheck disable=SC1090
+  source "$SECRETS_FILE"
+else
+  bad "secrets file missing: $SECRETS_FILE"
+fi
+
+if [[ "${SISO_BIFROST_KEY:-}" == sk-bf-* ]]; then
+  pass "bifrost key is present"
+else
+  bad "bifrost key missing or invalid"
+fi
+
+if [[ -f "$PROFILE_DIR/models.json" && -f "$PROFILE_DIR/settings.json" && -f "$PROFILE_DIR/SYSTEM.md" ]]; then
+  pass "profile files exist"
+else
+  bad "profile incomplete at $PROFILE_DIR"
+fi
+
+if command -v pi >/dev/null 2>&1; then
+  pass "pi command found"
+else
+  bad "pi command not found"
+fi
+
+if [[ -n "${SISO_BIFROST_KEY:-}" ]]; then
+  response="$(
+    curl -sSk --connect-timeout 8 --max-time 30 "$OPENAI_URL" \
+      -H "Authorization: Bearer $SISO_BIFROST_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"model":"gpt-5.4-mini","messages":[{"role":"user","content":"Reply exactly: SISO_DOCTOR_OK"}],"max_tokens":16}' || true
+  )"
+  if printf '%s' "$response" | grep -q 'SISO_DOCTOR_OK'; then
+    pass "model smoke passed"
+  else
+    bad "model smoke failed; key may be rejected or model route unavailable"
+  fi
+fi
+
+if grep -R "127.0.0.1:8080\\|localhost:8080\\|codex-proxy-local-key" "$PROFILE_DIR" >/dev/null 2>&1; then
+  bad "profile still contains stale local routing"
+else
+  pass "no stale local routing in profile"
+fi
+
+if [[ "$ok" -eq 1 ]]; then
+  printf 'SISO doctor passed.\n'
+else
+  printf 'SISO doctor found issues.\n' >&2
+  exit 1
+fi
+

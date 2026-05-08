@@ -1,0 +1,8 @@
+{
+  "version": "0.1.0",
+  "releasedAt": "2026-05-08T00:00:00Z",
+  "channel": "stable",
+  "gateway": "https://shaans-mac-mini.tail100d11.ts.net:8443",
+  "notes": "Initial public SISO Agent Base installer, doctor, update, and Mac Mini Bifrost profile templates."
+}
+

@@ -1,0 +1,21 @@
+{
+  "defaultProvider": "bifrost-anthropic",
+  "defaultModel": "claude-opus-4-7",
+  "defaultThinkingLevel": "off",
+  "hideThinkingBlock": true,
+  "quietStartup": true,
+  "transport": "sse",
+  "enableSkillCommands": true,
+  "enabledModels": [
+    "bifrost-anthropic/claude-haiku-4-5-20251001",
+    "bifrost-anthropic/gpt-5.4-mini",
+    "bifrost-anthropic/claude-sonnet-4-6",
+    "bifrost-anthropic/claude-opus-4-7"
+  ],
+  "retry": {
+    "enabled": true,
+    "maxRetries": 2,
+    "baseDelayMs": 1000
+  }
+}
+

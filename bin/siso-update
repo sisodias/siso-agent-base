@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+
+if [[ ! -d "$INSTALL_DIR/.git" ]]; then
+  echo "siso update: install dir missing at $INSTALL_DIR; rerun install.sh" >&2
+  exit 1
+fi
+
+git -C "$INSTALL_DIR" pull --ff-only
+exec "$INSTALL_DIR/scripts/install-local.sh" "$@"
+

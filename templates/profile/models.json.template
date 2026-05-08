@@ -1,0 +1,45 @@
+{
+  "providers": {
+    "bifrost-anthropic": {
+      "name": "SISO Mac Mini Bifrost",
+      "api": "anthropic-messages",
+      "baseUrl": "__SISO_ANTHROPIC_BASE__",
+      "apiKey": "__SISO_BIFROST_KEY__",
+      "models": [
+        {
+          "id": "claude-haiku-4-5-20251001",
+          "name": "MiniMax",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 32000
+        },
+        {
+          "id": "gpt-5.4-mini",
+          "name": "GPT-5.4 Mini",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 64000
+        },
+        {
+          "id": "claude-sonnet-4-6",
+          "name": "Spark",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 64000
+        },
+        {
+          "id": "claude-opus-4-7",
+          "name": "GPT-5.5",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 64000
+        }
+      ]
+    }
+  }
+}
+
