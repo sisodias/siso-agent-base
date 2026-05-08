@@ -3,6 +3,8 @@ set -euo pipefail
 
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
+INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+EXT_DIR="$INSTALL_DIR/extensions"
 GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
 ANTHROPIC_URL="$GATEWAY_BASE/anthropic"
 OPENAI_URL="$GATEWAY_BASE/openai/v1/chat/completions"
@@ -51,6 +53,23 @@ else
   bad "pi command not found"
 fi
 
+missing_extensions=0
+for ext in \
+  "$EXT_DIR/siso-lifecycle/index.js" \
+  "$EXT_DIR/siso-context-manager/index.js" \
+  "$EXT_DIR/siso-status/index.js" \
+  "$EXT_DIR/siso-agent-router/index.js"; do
+  if [[ ! -f "$ext" ]]; then
+    missing_extensions=1
+  fi
+done
+
+if [[ "$missing_extensions" -eq 0 ]]; then
+  pass "SISO HUD/router extensions installed"
+else
+  bad "SISO HUD/router extensions missing; run siso update"
+fi
+
 if [[ -n "${SISO_BIFROST_KEY:-}" ]]; then
   response="$(
     curl -sSk --connect-timeout 8 --max-time 30 "$OPENAI_URL" \
@@ -77,4 +96,3 @@ else
   printf 'SISO doctor found issues.\n' >&2
   exit 1
 fi
-

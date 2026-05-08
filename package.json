@@ -1,0 +1,16 @@
+{
+  "name": "siso-agent-base",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "description": "Public installer and client framework for SISO Agent Base.",
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.73.1",
+    "@mariozechner/pi-tui": "^0.73.1"
+  },
+  "scripts": {
+    "doctor": "bash bin/siso-doctor",
+    "smoke:syntax": "bash -n install.sh scripts/install-local.sh bin/siso bin/siso-update bin/siso-doctor"
+  }
+}
+

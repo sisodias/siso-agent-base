@@ -4,6 +4,8 @@ SISO Agent Base installs a local coding-agent launcher that connects to Shaan's 
 
 The repo is public and safe to share. It does not contain Bifrost keys, OAuth tokens, model-provider secrets, or Mac Mini private files. Each person gets their own key from Shaan and stores it only on their own machine.
 
+The launcher includes the SISO Agent Base runtime surface: status/HUD, model routing, context filtering, lifecycle capture, and SISO router tools. It is not just a plain Pi alias.
+
 ## Install
 
 1. Install Tailscale: <https://tailscale.com/download>
@@ -31,7 +33,7 @@ The repo is public and safe to share. It does not contain Bifrost keys, OAuth to
 
 ```bash
 siso          # start the agent
-siso doctor   # verify Tailscale, gateway, key, Pi, and model routing
+siso doctor   # verify Tailscale, gateway, key, Pi, SISO extensions, and model routing
 siso update   # pull the latest SISO Agent Base release
 siso version  # show local install version and gateway config
 ```
@@ -77,4 +79,3 @@ siso doctor
 ```
 
 Common fixes are documented in [docs/troubleshooting.md](docs/troubleshooting.md).
-

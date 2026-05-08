@@ -1,8 +1,7 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "releasedAt": "2026-05-08T00:00:00Z",
   "channel": "stable",
   "gateway": "https://shaans-mac-mini.tail100d11.ts.net:8443",
-  "notes": "Initial public SISO Agent Base installer, doctor, update, and Mac Mini Bifrost profile templates."
+  "notes": "Adds vendored SISO HUD/status/router/context/lifecycle extensions so installs use the SISO Agent Base surface instead of plain Pi."
 }
-

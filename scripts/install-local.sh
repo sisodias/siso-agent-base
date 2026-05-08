@@ -22,6 +22,13 @@ need_cmd git
 need_cmd curl
 need_cmd node
 
+if [[ -f "$ROOT/package.json" ]]; then
+  if [[ ! -d "$ROOT/node_modules/@mariozechner/pi-tui" || ! -d "$ROOT/node_modules/@mariozechner/pi-coding-agent" ]]; then
+    info "Installing SISO Agent Base runtime dependencies..."
+    npm --prefix "$ROOT" install --omit=dev --no-audit --no-fund
+  fi
+fi
+
 mkdir -p "$PROFILE_DIR" "$(dirname "$SECRETS_FILE")" "$BIN_DIR"
 
 if [[ ! -f "$SECRETS_FILE" ]] || ! grep -q '^SISO_BIFROST_KEY=' "$SECRETS_FILE"; then
@@ -82,4 +89,3 @@ info "SISO Agent Base installed."
 info "Run: siso"
 info "Update: siso update"
 info "Health: siso doctor"
-

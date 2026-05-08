@@ -51,3 +51,19 @@ codex-proxy-local-key
 
 These should not appear in your active SISO profile.
 
+## Basic Pi UI Instead Of SISO UI
+
+Run:
+
+```bash
+siso update
+siso doctor
+```
+
+Doctor should include:
+
+```text
+ok  - SISO HUD/router extensions installed
+```
+
+If that line fails, the local install is old or incomplete. Delete `~/.siso-agent-base` and rerun the installer.

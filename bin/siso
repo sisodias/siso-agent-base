@@ -15,6 +15,8 @@ fi
 
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
+INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+EXT_DIR="$INSTALL_DIR/extensions"
 
 if [[ -f "$SECRETS_FILE" ]]; then
   # shellcheck disable=SC1090
@@ -30,15 +32,48 @@ export PI_CODING_AGENT_DIR="$PROFILE_DIR"
 export SISO_HOME="${SISO_HOME:-$HOME/.siso}"
 export SISO_AGENT_HOME="${SISO_AGENT_HOME:-$HOME/.siso/agent}"
 export SISO_GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
+export SISO_CONTEXT_MINIMAX_ENDPOINT="${SISO_CONTEXT_MINIMAX_ENDPOINT:-$SISO_GATEWAY_BASE/anthropic/v1/messages}"
+if [[ -n "${SISO_BIFROST_KEY:-}" ]]; then
+  export SISO_CONTEXT_MINIMAX_API_KEY="${SISO_CONTEXT_MINIMAX_API_KEY:-$SISO_BIFROST_KEY}"
+fi
+export SISO_CHILD_RUN_DIR="${SISO_CHILD_RUN_DIR:-$HOME/.siso/agent/child-runs}"
+export SISO_TASK_STORE_PATH="${SISO_TASK_STORE_PATH:-$HOME/.siso/agent/tasks/siso-tasks.json}"
+export SISO_TRANSCRIPT_DIR="${SISO_TRANSCRIPT_DIR:-$HOME/.siso/agent/transcripts}"
+export PI_OFFLINE="${PI_OFFLINE:-1}"
+export PI_TELEMETRY="${PI_TELEMETRY:-0}"
+export SISO_AGENT_ROUTER_TOOL_MODE="${SISO_AGENT_ROUTER_TOOL_MODE:-lean}"
+export SISO_STATUS_TOOL_MODE="${SISO_STATUS_TOOL_MODE:-lean}"
+export SISO_LIFECYCLE_TOOL_MODE="${SISO_LIFECYCLE_TOOL_MODE:-lean}"
+export SISO_STATUS_UI="${SISO_STATUS_UI:-compact}"
+export SISO_LIFECYCLE_UI="${SISO_LIFECYCLE_UI:-off}"
+export SISO_PI_FOOTER_CLEAN="${SISO_PI_FOOTER_CLEAN:-1}"
+export SISO_CONTEXT_FILTER="${SISO_CONTEXT_FILTER:-1}"
+export SISO_CONTEXT_FORCE_OLD_TOOL_AFTER="${SISO_CONTEXT_FORCE_OLD_TOOL_AFTER:-24}"
+export SISO_CONTEXT_SEMANTIC_LIBRARIAN="${SISO_CONTEXT_SEMANTIC_LIBRARIAN:-1}"
+export SISO_CONTEXT_LIBRARIAN_TURNS="${SISO_CONTEXT_LIBRARIAN_TURNS:-4}"
+export SISO_CONTEXT_LIBRARIAN_TOKENS="${SISO_CONTEXT_LIBRARIAN_TOKENS:-25000}"
+export SISO_SPAWN_DEFAULT_BACKGROUND="${SISO_SPAWN_DEFAULT_BACKGROUND:-0}"
 
 MODEL="${SISO_MODEL:-claude-opus-4-7}"
-TOOLS="${SISO_TOOLS:-read,bash,edit,write,ls}"
+TOOLS="${SISO_TOOLS:-read,bash,edit,write,ls,siso,siso_context}"
 
-exec pi \
-  --provider bifrost-anthropic \
-  --model "$MODEL" \
-  --tools "$TOOLS" \
-  --no-skills \
-  --no-context-files \
-  "$@"
+args=(
+  --provider bifrost-anthropic
+  --model "$MODEL"
+  --tools "$TOOLS"
+  --no-skills
+  --no-context-files
+  --no-extensions
+)
 
+for ext in \
+  "$EXT_DIR/siso-lifecycle/index.js" \
+  "$EXT_DIR/siso-context-manager/index.js" \
+  "$EXT_DIR/siso-status/index.js" \
+  "$EXT_DIR/siso-agent-router/index.js"; do
+  if [[ -f "$ext" ]]; then
+    args+=(-e "$ext")
+  fi
+done
+
+exec pi "${args[@]}" "$@"
