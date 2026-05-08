@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${SISO_AGENT_BASE_REPO:-https://github.com/Lordsisodia/siso-agent-base.git}"
+REPO_URL="${SISO_AGENT_BASE_REPO:-https://github.com/sisodias/siso-agent-base.git}"
 INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
 
 if [[ -d "$INSTALL_DIR/.git" ]]; then

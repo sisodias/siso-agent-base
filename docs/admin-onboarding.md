@@ -33,7 +33,7 @@ Install SISO Agent Base:
 2. Log in with the Gmail I invited.
 3. Open: https://shaans-mac-mini.tail100d11.ts.net:8443/health
 4. Run:
-   curl -fsSL https://raw.githubusercontent.com/Lordsisodia/siso-agent-base/main/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/sisodias/siso-agent-base/main/install.sh | bash
 5. Paste the key I sent privately.
 6. Run:
    siso doctor

@@ -8,7 +8,7 @@ Replace `PASTE_YOUR_KEY_HERE` before sending, or tell them to paste the key only
 Set up SISO Agent Base on my machine.
 
 Context:
-- Repo: https://github.com/Lordsisodia/siso-agent-base
+- Repo: https://github.com/sisodias/siso-agent-base
 - Gateway health: https://shaans-mac-mini.tail100d11.ts.net:8443/health
 - Anthropic base URL: https://shaans-mac-mini.tail100d11.ts.net:8443/anthropic
 - OpenAI base URL: https://shaans-mac-mini.tail100d11.ts.net:8443/openai/v1
@@ -18,7 +18,7 @@ Requirements:
 1. Do not print, log, or expose my Bifrost key.
 2. Verify Tailscale can reach the gateway health URL.
 3. Install SISO Agent Base with:
-   curl -fsSL https://raw.githubusercontent.com/Lordsisodia/siso-agent-base/main/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/sisodias/siso-agent-base/main/install.sh | bash
 4. If the installer asks for my key, paste it into stdin without echoing it elsewhere.
 5. Run:
    siso doctor
@@ -33,6 +33,6 @@ Requirements:
 Manual install command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Lordsisodia/siso-agent-base/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sisodias/siso-agent-base/main/install.sh | bash
 ```
 

@@ -17,7 +17,7 @@ The repo is public and safe to share. It does not contain Bifrost keys, OAuth to
 4. Run the installer:
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/Lordsisodia/siso-agent-base/main/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/sisodias/siso-agent-base/main/install.sh | bash
    ```
 
 5. Paste your personal SISO Bifrost key when prompted.
