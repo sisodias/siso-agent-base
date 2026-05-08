@@ -25,7 +25,7 @@ fi
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
 EXT_DIR="$INSTALL_DIR/extensions"
-PI_BIN="$INSTALL_DIR/node_modules/.bin/pi"
+PI_BIN="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist/cli.js"
 
 if [[ -f "$SECRETS_FILE" ]]; then
   # shellcheck disable=SC1090

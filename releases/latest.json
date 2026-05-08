@@ -1,7 +1,7 @@
 {
-  "version": "0.1.4",
+  "version": "0.1.5",
   "releasedAt": "2026-05-08T00:00:00Z",
   "channel": "stable",
   "gateway": "https://shaans-mac-mini.tail100d11.ts.net:8443",
-  "notes": "Applies SISO native Pi renderer polish during install/update so fresh machines match Shaan's compact tool/footer/model UI, in addition to bundled Pi and SISO HUD/router extensions."
+  "notes": "Pins the launcher to the exact bundled Pi package path instead of node_modules/.bin/pi, avoiding stale global/renamed Pi symlinks, and keeps native renderer polish checks on that same package."
 }

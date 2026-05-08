@@ -5,7 +5,7 @@ PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
 INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
 EXT_DIR="$INSTALL_DIR/extensions"
-PI_BIN="$INSTALL_DIR/node_modules/.bin/pi"
+PI_BIN="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist/cli.js"
 GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
 ANTHROPIC_URL="$GATEWAY_BASE/anthropic"
 OPENAI_URL="$GATEWAY_BASE/openai/v1/chat/completions"
@@ -73,7 +73,7 @@ else
   bad "SISO HUD/router extensions missing; run siso update"
 fi
 
-if SISO_PI_PACKAGE_ROOT="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist" node "$INSTALL_DIR/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
+if [[ -x "$PI_BIN" ]] && SISO_PI_PACKAGE_ROOT="$(dirname "$PI_BIN")" node "$INSTALL_DIR/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
   pass "SISO native Pi renderer polish installed"
 else
   bad "SISO native Pi renderer polish missing; run siso update"
