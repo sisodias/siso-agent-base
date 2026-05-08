@@ -27,6 +27,8 @@ if [[ -f "$ROOT/package.json" ]]; then
     info "Installing SISO Agent Base runtime dependencies..."
     npm --prefix "$ROOT" install --omit=dev --no-audit --no-fund
   fi
+  info "Applying SISO native Pi renderer polish..."
+  SISO_PI_PACKAGE_ROOT="$ROOT/node_modules/@mariozechner/pi-coding-agent/dist" node "$ROOT/scripts/patch-pi-native-renderers.mjs" >/dev/null
 fi
 
 mkdir -p "$PROFILE_DIR" "$(dirname "$SECRETS_FILE")" "$BIN_DIR"

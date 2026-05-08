@@ -73,6 +73,12 @@ else
   bad "SISO HUD/router extensions missing; run siso update"
 fi
 
+if SISO_PI_PACKAGE_ROOT="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist" node "$INSTALL_DIR/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
+  pass "SISO native Pi renderer polish installed"
+else
+  bad "SISO native Pi renderer polish missing; run siso update"
+fi
+
 if [[ -n "${SISO_BIFROST_KEY:-}" ]]; then
   response="$(
     curl -sSk --connect-timeout 8 --max-time 30 "$OPENAI_URL" \
