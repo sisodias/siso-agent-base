@@ -1,6 +1,6 @@
 {
   "name": "siso-agent-base",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "Public installer and client framework for SISO Agent Base.",
@@ -13,4 +13,3 @@
     "smoke:syntax": "bash -n install.sh scripts/install-local.sh bin/siso bin/siso-update bin/siso-doctor"
   }
 }
-

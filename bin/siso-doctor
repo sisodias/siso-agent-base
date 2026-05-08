@@ -24,7 +24,7 @@ fi
 if curl -fsSk --connect-timeout 5 --max-time 10 "$GATEWAY_BASE/health" >/dev/null 2>&1; then
   pass "gateway health reachable"
 else
-  bad "gateway health unreachable: $GATEWAY_BASE/health"
+  warn "gateway health unreachable: $GATEWAY_BASE/health"
 fi
 
 if [[ -f "$SECRETS_FILE" ]]; then

@@ -1,7 +1,7 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "releasedAt": "2026-05-08T00:00:00Z",
   "channel": "stable",
   "gateway": "https://shaans-mac-mini.tail100d11.ts.net:8443",
-  "notes": "Adds vendored SISO HUD/status/router/context/lifecycle extensions so installs use the SISO Agent Base surface instead of plain Pi."
+  "notes": "Adds vendored SISO HUD/status/router/context/lifecycle extensions so installs use the SISO Agent Base surface instead of plain Pi. Doctor treats /health as advisory and relies on authenticated model smoke for pass/fail."
 }
