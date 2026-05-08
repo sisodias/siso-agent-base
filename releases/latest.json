@@ -1,7 +1,7 @@
 {
-  "version": "0.1.5",
+  "version": "0.1.6",
   "releasedAt": "2026-05-08T00:00:00Z",
   "channel": "stable",
   "gateway": "https://shaans-mac-mini.tail100d11.ts.net:8443",
-  "notes": "Pins the launcher to the exact bundled Pi package path instead of node_modules/.bin/pi, avoiding stale global/renamed Pi symlinks, and keeps native renderer polish checks on that same package."
+  "notes": "Repairs stale or half-patched runtime dependencies automatically during install/update, pins the launcher to the exact bundled Pi path, and verifies renderer polish on that path."
 }

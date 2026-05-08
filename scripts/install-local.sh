@@ -29,6 +29,13 @@ if [[ -f "$ROOT/package.json" ]]; then
   fi
   info "Applying SISO native Pi renderer polish..."
   SISO_PI_PACKAGE_ROOT="$ROOT/node_modules/@mariozechner/pi-coding-agent/dist" node "$ROOT/scripts/patch-pi-native-renderers.mjs" >/dev/null
+  if ! SISO_PI_PACKAGE_ROOT="$ROOT/node_modules/@mariozechner/pi-coding-agent/dist" node "$ROOT/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
+    info "Repairing SISO Agent Base runtime dependencies..."
+    rm -rf "$ROOT/node_modules"
+    npm --prefix "$ROOT" install --omit=dev --no-audit --no-fund
+    SISO_PI_PACKAGE_ROOT="$ROOT/node_modules/@mariozechner/pi-coding-agent/dist" node "$ROOT/scripts/patch-pi-native-renderers.mjs" >/dev/null
+    SISO_PI_PACKAGE_ROOT="$ROOT/node_modules/@mariozechner/pi-coding-agent/dist" node "$ROOT/scripts/smoke-pi-native-renderers.mjs" >/dev/null
+  fi
 fi
 
 mkdir -p "$PROFILE_DIR" "$(dirname "$SECRETS_FILE")" "$BIN_DIR"
