@@ -1,32 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+BIN_DIR="${SISO_BIN_DIR:-$HOME/bin}"
+
 if [[ "${1:-}" == "update" ]]; then
-  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-update" "${@:2}"
+  exec "$BIN_DIR/siso-update" "${@:2}"
 fi
 
 if [[ "${1:-}" == "doctor" ]]; then
-  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-doctor" "${@:2}"
+  if [[ -x "$BIN_DIR/siso-doctor" ]]; then
+    exec "$BIN_DIR/siso-doctor" "${@:2}"
+  fi
+  exec "$INSTALL_DIR/bin/siso-doctor" "${@:2}"
 fi
 
 if [[ "${1:-}" == "version" ]]; then
-  exec "${SISO_BIN_DIR:-$HOME/bin}/siso-version" "${@:2}"
+  if [[ -x "$BIN_DIR/siso-version" ]]; then
+    exec "$BIN_DIR/siso-version" "${@:2}"
+  fi
+  exec "$INSTALL_DIR/bin/siso-version" "${@:2}"
 fi
 
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
-INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
 EXT_DIR="$INSTALL_DIR/extensions"
+PI_BIN="$INSTALL_DIR/node_modules/.bin/pi"
 
 if [[ -f "$SECRETS_FILE" ]]; then
   # shellcheck disable=SC1090
   source "$SECRETS_FILE"
 fi
 
-command -v pi >/dev/null 2>&1 || {
-  echo "siso: pi is not installed or not on PATH. Install Pi first, then rerun siso doctor." >&2
+if [[ ! -x "$PI_BIN" ]]; then
+  PI_BIN="$(command -v pi || true)"
+fi
+
+if [[ -z "$PI_BIN" ]]; then
+  echo "siso: pi is not installed. Run siso update, then rerun siso doctor." >&2
   exit 127
-}
+fi
 
 export PI_CODING_AGENT_DIR="$PROFILE_DIR"
 export SISO_HOME="${SISO_HOME:-$HOME/.siso}"
@@ -76,4 +89,4 @@ for ext in \
   fi
 done
 
-exec pi "${args[@]}" "$@"
+exec "$PI_BIN" "${args[@]}" "$@"

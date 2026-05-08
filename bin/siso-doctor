@@ -5,6 +5,7 @@ PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
 INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
 EXT_DIR="$INSTALL_DIR/extensions"
+PI_BIN="$INSTALL_DIR/node_modules/.bin/pi"
 GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
 ANTHROPIC_URL="$GATEWAY_BASE/anthropic"
 OPENAI_URL="$GATEWAY_BASE/openai/v1/chat/completions"
@@ -47,10 +48,12 @@ else
   bad "profile incomplete at $PROFILE_DIR"
 fi
 
-if command -v pi >/dev/null 2>&1; then
-  pass "pi command found"
+if [[ -x "$PI_BIN" ]]; then
+  pass "bundled pi command found"
+elif command -v pi >/dev/null 2>&1; then
+  pass "global pi command found"
 else
-  bad "pi command not found"
+  bad "pi command not found; run siso update"
 fi
 
 missing_extensions=0
