@@ -18,6 +18,7 @@ npm run smoke:error-queue
 npm run smoke:agent-prompts
 npm run smoke:subagent-stack
 npm run smoke:agent-scorecards
+npm run smoke:child-run-scorecards
 npm run smoke:supervisor-persistence
 npm run smoke:extension-adapter-contract
 npm run benchmark:subagent-stack
@@ -35,6 +36,8 @@ siso doctor
 - Use `siso_project_agents` before selecting trusted markdown project/user agents.
 - Use `siso_supervisor` before retry/deadletter/orphan-cleanup decisions.
 - Use `siso_agent_scorecards` before promoting an agent route, prompt, or extension-backed specialist.
+- Treat delivered terminal child-run scorecards as routing evidence, not just logs.
+- Let scorecard-aware `siso_spawn` pick trusted project agents only when the task clearly matches the agent purpose; pass an explicit `agent` for deterministic routing.
 - Use `siso_extension_adapter` before promoting a Pi package or repo into runtime adapter status.
 - Keep third-party Pi packages as references/adapters unless the audit docs explicitly approve a narrower integration.
 

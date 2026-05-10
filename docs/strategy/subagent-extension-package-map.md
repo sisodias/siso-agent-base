@@ -1,6 +1,6 @@
 # Subagent Extension Package Map
 
-Generated: 2026-05-10T07:47:35.907Z
+Generated: 2026-05-10T08:13:09.369Z
 
 This map is a reference list from the catalog docs and the round-2 audit. It is not an install endorsement.
 

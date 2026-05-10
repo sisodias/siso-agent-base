@@ -1,6 +1,6 @@
 # Subagent Improve Log
 
-Generated: 2026-05-10T07:47:35.908Z
+Generated: 2026-05-10T08:13:09.371Z
 
 ## Baseline
 
@@ -24,6 +24,7 @@ Generated: 2026-05-10T07:47:35.908Z
 - Package classification covered: yes.
 - Persisted supervisor records covered: yes.
 - Agent scorecards covered: yes.
+- Child-run scorecard harvesting covered: yes.
 - Extension adapter contract covered: yes.
 - Package map doc available: [subagent-extension-package-map.md](subagent-extension-package-map.md).
 
@@ -44,6 +45,7 @@ Generated: 2026-05-10T07:47:35.908Z
 | `classifyPackageForSubagentUse(pkg)` | ready | reference and future-candidate package classes are distinguished. |
 | `persistSupervisorRecord/listSupervisorRecords` | ready | active/retry/deadletter/orphan records append to `.siso/supervisor/*.jsonl`. |
 | `recordAgentScorecard/listAgentScorecards` | ready | scorecards persist under `.siso/evals/results` and summarize best agent runs. |
+| `recordChildRunScorecard(record)` | wired | terminal child run records can be harvested into scorecards with latency, token-cost, and finding counts. |
 | `validateExtensionAdapter/createExtensionAdapterManifest` | ready | adapter manifests declare id, risk, capabilities, and executable run support. |
 
 ## Runtime Wiring
@@ -60,6 +62,8 @@ Generated: 2026-05-10T07:47:35.908Z
 - `siso_supervisor` exposes health, retry, deadletter, and cleanup-check operations.
 - `siso_supervisor` persists and lists active, retry, deadletter, and orphan records under `.siso/supervisor`.
 - `siso_agent_scorecards` records, lists, and summarizes `.siso/evals/results` scorecards.
+- Delivered terminal child runs now persist scorecards back onto the run record and `.siso/evals/results`.
+- `siso_spawn` can auto-select trusted markdown project/user agents from matching scorecards when no explicit agent is supplied.
 - `siso_extension_adapter` validates adapter manifests before package candidates are promoted to runtime.
 - Supervisor helpers expose deadletter, retry, and orphan cleanup identity decisions for future action surfaces.
 - `audit:subagent-architecture` regenerates the package-to-layer architecture audit.

@@ -15,7 +15,7 @@ export function loadLocalSisoSnapshot(options: LocalSnapshotOptions = {}) {
   const active = children.filter((event) => event.type === "agent" && event.status === "running").length;
   const latestStatus: SisoUiEvent = {
     type: "status",
-    model: options.model ?? process.env.SISO_MODEL ?? "Spark",
+    model: options.model ?? process.env.SISO_MODEL,
     activeAgents: active,
     at: new Date().toISOString(),
   };
@@ -35,7 +35,7 @@ export function createLocalSession(title = "SISO terminal session"): SisoUiSessi
   return {
     id: `local-${Date.now().toString(36)}`,
     title,
-    model: process.env.SISO_MODEL ?? "Spark",
+    model: process.env.SISO_MODEL,
     updatedAt: new Date().toISOString(),
     events,
   };

@@ -41,15 +41,41 @@ export function formatTokens(tokens?: number) {
   return `${tokens} tok`;
 }
 
-export function renderStartupRows(width: number, model = "Spark") {
+export function renderStartupRows(width: number, model = "") {
   return [
     fit("SISO", width),
-    fit(`loading workspace · ${model} · extensions`, width),
+    fit(["loading workspace", model, "extensions"].filter(Boolean).join(" · "), width),
   ];
 }
 
+export function renderWelcomePanelRows(input: {
+  width: number;
+  version?: string;
+  user?: string;
+  cwd?: string;
+  recent?: string[];
+}) {
+  const width = Math.max(40, input.width);
+  const title = ` SISO Agent Base${input.version ? ` v${input.version}` : ""} `;
+  const topRule = line(Math.max(0, width - title.length - 2));
+  const rows = [`╭─${title}${topRule}╮`];
+  const inner = Math.max(0, width - 4);
+  const user = input.user ? ` ${input.user}` : "";
+  rows.push(panelLine(`Welcome back${user}`, inner));
+  rows.push(panelLine("", inner));
+  rows.push(panelLine("SISO TUI is ready", inner));
+  if (input.cwd) rows.push(panelLine(input.cwd, inner));
+  rows.push(panelLine("", inner));
+  rows.push(panelLine("Recent activity", inner));
+  const recent = input.recent?.filter(Boolean).slice(0, 3) ?? [];
+  if (recent.length === 0) rows.push(panelLine("No recent activity", inner));
+  for (const item of recent) rows.push(panelLine(item, inner));
+  rows.push(`╰${line(Math.max(0, width - 2))}╯`);
+  return rows.map((row) => fit(row, input.width));
+}
+
 export function renderStatusLine(event: Extract<SisoUiEvent, { type: "status" }> | undefined, width: number) {
-  const model = event?.model ?? "Spark";
+  const model = event?.model ?? "";
   const context = event?.contextPercent === undefined ? "" : `ctx ${Math.round(event.contextPercent)}%`;
   const tokens = event?.contextTokens ? formatTokens(event.contextTokens) : "";
   const agents = event?.activeAgents ? `${event.activeAgents} agents` : "";
@@ -115,6 +141,10 @@ export function renderSessionListRows(sessions: SisoUiSession[], selected: numbe
     rows.push(fit(`${marker} ${session.title} · ${session.model ?? "model"} · ${session.events.length} events`, width));
   });
   return rows.slice(0, maxRows);
+}
+
+function panelLine(value: string, innerWidth: number) {
+  return `│ ${fit(value, innerWidth)} │`;
 }
 
 function renderToolItem(item: SisoUiToolItem, width: number) {

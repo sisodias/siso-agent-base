@@ -21,6 +21,7 @@ import {
 } from "../extensions/siso-agent-router/extension-adapter.js";
 import {
   listAgentScorecards,
+  recordChildRunScorecard,
   recordAgentScorecard,
   summarizeAgentScorecards,
 } from "../extensions/siso-agent-router/agent-scorecards.js";
@@ -146,6 +147,7 @@ function renderImproveLog(summary, packages) {
     `- Package classification covered: ${summary.packageClassificationOk ? "yes" : "no"}.`,
     `- Persisted supervisor records covered: ${summary.supervisorPersistenceOk ? "yes" : "no"}.`,
     `- Agent scorecards covered: ${summary.scorecardsOk ? "yes" : "no"}.`,
+    `- Child-run scorecard harvesting covered: ${summary.childRunScorecardsOk ? "yes" : "no"}.`,
     `- Extension adapter contract covered: ${summary.adapterContractOk ? "yes" : "no"}.`,
     `- Package map doc available: ${formatLink("subagent-extension-package-map.md", "subagent-extension-package-map.md")}.`,
     "",
@@ -166,6 +168,7 @@ function renderImproveLog(summary, packages) {
     `| \`classifyPackageForSubagentUse(pkg)\` | ready | ${summary.packageNotes} |`,
     `| \`persistSupervisorRecord/listSupervisorRecords\` | ready | ${summary.supervisorPersistenceNotes} |`,
     `| \`recordAgentScorecard/listAgentScorecards\` | ready | ${summary.scorecardNotes} |`,
+    `| \`recordChildRunScorecard(record)\` | wired | ${summary.childRunScorecardNotes} |`,
     `| \`validateExtensionAdapter/createExtensionAdapterManifest\` | ready | ${summary.adapterNotes} |`,
     "",
     "## Runtime Wiring",
@@ -182,6 +185,8 @@ function renderImproveLog(summary, packages) {
     "- `siso_supervisor` exposes health, retry, deadletter, and cleanup-check operations.",
     "- `siso_supervisor` persists and lists active, retry, deadletter, and orphan records under `.siso/supervisor`.",
     "- `siso_agent_scorecards` records, lists, and summarizes `.siso/evals/results` scorecards.",
+    "- Delivered terminal child runs now persist scorecards back onto the run record and `.siso/evals/results`.",
+    "- `siso_spawn` can auto-select trusted markdown project/user agents from matching scorecards when no explicit agent is supplied.",
     "- `siso_extension_adapter` validates adapter manifests before package candidates are promoted to runtime.",
     "- Supervisor helpers expose deadletter, retry, and orphan cleanup identity decisions for future action surfaces.",
     "- `audit:subagent-architecture` regenerates the package-to-layer architecture audit.",
@@ -229,6 +234,7 @@ const helperExports = [
   isExtensionAdapter,
   createExtensionAdapterManifest,
   recordAgentScorecard,
+  recordChildRunScorecard,
   listAgentScorecards,
   summarizeAgentScorecards,
   claimNextTask,
@@ -390,6 +396,21 @@ const scorecard = recordAgentScorecard({
 }, { cwd: tempRoot, now: () => new Date(now + 7).toISOString() });
 const scorecards = listAgentScorecards({ cwd: tempRoot });
 expect(scorecards.length === 1 && summarizeAgentScorecards(scorecards).best?.id === scorecard.id, "agent scorecard should round-trip and summarize");
+const childRunScorecard = recordChildRunScorecard({
+  id: "child-scorecard-benchmark",
+  status: "completed",
+  profile: "project.code-reviewer",
+  model: "gpt-5.4-mini",
+  cwd: tempRoot,
+  startedAt: new Date(now).toISOString(),
+  completedAt: new Date(now + 94_000).toISOString(),
+  compactResult: {
+    summary: "Found two risks.",
+    findings: ["risk one", "risk two"],
+  },
+  tokens: { totalTokens: 3000 },
+}, { recordedAt: new Date(now + 8).toISOString(), reason: "benchmark" });
+expect(childRunScorecard.id.includes("child-scorecard-benchmark"), "child run scorecard should use stable child id");
 const sampleAdapter = {
   id: "browser-use",
   name: "Browser Use Adapter",
@@ -443,6 +464,7 @@ if (!smokeOnly) {
         packageClassificationOk: packageRows.every((row) => row.use !== "ignore"),
         supervisorPersistenceOk: listSupervisorRecords({ cwd: tempRoot, kind: "deadletters" }).length === 1,
         scorecardsOk: scorecards.length === 1 && scorecard.score.overall > 0,
+        childRunScorecardsOk: childRunScorecard.score.overall > 0,
         adapterContractOk: validateExtensionAdapter(sampleAdapter).valid === true,
         schedulerNotes: "claim, wave, failure propagation, and subtree resume sample records all pass.",
         taskStoreNotes: "persistent task-store claim, wave, fail/block, and resume operations all pass.",
@@ -457,6 +479,7 @@ if (!smokeOnly) {
         packageNotes: "reference and future-candidate package classes are distinguished.",
         supervisorPersistenceNotes: "active/retry/deadletter/orphan records append to `.siso/supervisor/*.jsonl`.",
         scorecardNotes: "scorecards persist under `.siso/evals/results` and summarize best agent runs.",
+        childRunScorecardNotes: "terminal child run records can be harvested into scorecards with latency, token-cost, and finding counts.",
         adapterNotes: "adapter manifests declare id, risk, capabilities, and executable run support.",
       },
       packageRows,

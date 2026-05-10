@@ -1,0 +1,20 @@
+{
+  "id": "minimax.worker@claude-haiku-4-5-20251001/child-run-siso-child-batch-a",
+  "agent": "minimax.worker",
+  "version": "claude-haiku-4-5-20251001",
+  "taskSet": "child-run-siso-child-batch-a",
+  "recordedAt": "2026-05-08T12:02:00.000Z",
+  "runs": 1,
+  "trueFindings": 1,
+  "falsePositives": 0,
+  "missedBugs": 0,
+  "avgCostUsd": 0.0015,
+  "avgLatencySeconds": 11,
+  "notes": "child_id=siso-child-batch-a\nstatus=completed\ntask=Batch child A\nreason=child-notification-delivered",
+  "score": {
+    "accuracy": 1,
+    "cost": 0.9985,
+    "speed": 0.9646,
+    "overall": 0.9944
+  }
+}

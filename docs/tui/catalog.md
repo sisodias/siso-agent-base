@@ -114,8 +114,10 @@ Research/design references:
 Included behavior:
 
 - instant chat-first session surface with no fake loading screen
-- quiet one-line metadata header
+- quiet one-line header with no inferred model or stale agent count
 - clean composer-first first screen
+- Claude-style welcome panel in the empty transcript with SISO version, workspace, and recent activity
+- OpenCode-inspired black palette and Braille working spinner
 - real prompt submission through the Pi/SISO `AgentSession` runtime
 - assistant text streaming into the transcript
 - tool execution start/update/end rows

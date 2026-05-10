@@ -215,6 +215,7 @@ export function parseAgentMarkdown(text, sourcePath, scope, rootPath) {
     if (!hasFrontmatter || !hasAgentSignals(frontmatter))
         return undefined;
     const name = pickFrontmatterValue(frontmatter, ["name"]);
+    const description = pickFrontmatterValue(frontmatter, ["description"]);
     const model = pickFrontmatterValue(frontmatter, ["model"]);
     const thinkingLevel = pickFrontmatterValue(frontmatter, ["thinkingLevel", "thinking"]);
     const tools = normalizeToolAcl(frontmatter.tools);
@@ -230,6 +231,7 @@ export function parseAgentMarkdown(text, sourcePath, scope, rootPath) {
     return {
         id: displayName,
         name: displayName,
+        description,
         model,
         thinkingLevel,
         costTier,

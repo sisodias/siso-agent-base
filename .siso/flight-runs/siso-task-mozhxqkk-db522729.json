@@ -1,0 +1,35 @@
+{
+  "action": "workflow-flight-recorder",
+  "id": "siso-task-mozhxqkk-db522729",
+  "writtenAt": "2026-05-10T08:13:50.325Z",
+  "taskId": "siso-task-mozhxqkk-db522729",
+  "status": "planned",
+  "loopOutcome": "worker_failed",
+  "workerIds": [
+    "siso-child-mozhxqm6-oqzxyn"
+  ],
+  "verifierVerdicts": [],
+  "verifierIds": [],
+  "feedbackPackets": [],
+  "failureSignatures": [],
+  "reentryWorkerIds": [],
+  "checksOk": true,
+  "checkIterations": [
+    {
+      "iteration": 1,
+      "ok": true,
+      "results": [
+        {
+          "command": "node -e \"process.exit(0)\"",
+          "ok": true,
+          "blocked": false,
+          "exitCode": 0,
+          "elapsedMs": 277,
+          "timedOut": false,
+          "summary": ""
+        }
+      ]
+    }
+  ],
+  "checkpoints": []
+}

@@ -177,6 +177,14 @@ Status update, 2026-05-10:
 
 Remaining gap: this is still a deterministic controller-first policy, not a full GPT-5.5-generated allocation graph with persisted specialist IDs, ownership boundaries, and verification contracts.
 
+Status update, later 2026-05-10:
+
+- Added a local side-by-side Codex-vs-SISO eval scaffold in `benchmarks/harness/codex-vs-siso-cases.json` and `scripts/run-codex-vs-siso-eval.mjs`.
+- The smoke path exercises SISO controller allocation deterministically, checks specialist identity, execution profile, required checks, acceptance criteria, allocation metadata, and worker evidence-contract prompting.
+- The direct Codex side is deliberately skipped by default. It can be attempted with `npm run eval:codex-vs-siso -- --live` plus `SISO_CODEX_LIVE_EVAL=1`.
+- A live planning run completed successfully on 2026-05-10: SISO local assertions were 100%, and direct `codex exec --json` returned parseable allocation plans for all 3 cases.
+- This means we now have a working planning benchmark lane. The remaining eval gap is full end-to-end implementation comparison: same task, isolated workspace, direct Codex edit/check loop vs `siso` controller/subagent/check loop.
+
 Sources:
 
 - `extensions/siso-agent-router/route-policy.js`

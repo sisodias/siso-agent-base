@@ -245,6 +245,17 @@ Scorecards persist under:
 
 Use scorecards to route by measured performance rather than static preference.
 
+Delivered terminal child runs also write scorecards automatically. When `markParentNotificationDelivered` records a child completion, it stores a scorecard on the run record and persists the eval result under `.siso/evals/results`.
+
+`siso_spawn` can use scorecards to auto-select a trusted project/user markdown agent when:
+
+- no explicit `agent` is supplied, or `agent` is `auto`
+- the scored agent exists in `siso_project_agents`
+- the task text clearly matches the agent purpose
+- the best matching scorecard has enough signal to beat the generic route
+
+Explicit `agent` always wins over scorecard routing.
+
 ## Extension Adapter Contract
 
 Pi packages and external repos must cross a narrow adapter boundary before runtime use. A candidate adapter declares:
@@ -301,6 +312,7 @@ npm run smoke:supervisor-tool
 npm run smoke:supervisor-persistence
 npm run smoke:agent-scorecards
 npm run smoke:agent-scorecards-tool
+npm run smoke:child-run-scorecards
 npm run smoke:extension-adapter-contract
 npm run smoke:agents-command
 npm run smoke:subagent-stack

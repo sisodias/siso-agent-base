@@ -12,6 +12,7 @@ export type AgentScope = "project" | "user";
 export interface ProjectAgentDefinition {
     id: string;
     name: string;
+    description?: string;
     model?: string;
     thinkingLevel?: string;
     costTier?: string;

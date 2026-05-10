@@ -1,0 +1,19 @@
+{
+  "action": "workflow-flight-recorder",
+  "id": "siso-task-mozerg40-7221ac1e",
+  "writtenAt": "2026-05-10T06:44:57.638Z",
+  "taskId": "siso-task-mozerg40-7221ac1e",
+  "status": "planned",
+  "loopOutcome": "skipped",
+  "workerIds": [
+    "siso-child-mozerg45-npvd6i",
+    "siso-child-mozerg5c-mytial"
+  ],
+  "verifierVerdicts": [],
+  "verifierIds": [],
+  "feedbackPackets": [],
+  "failureSignatures": [],
+  "reentryWorkerIds": [],
+  "checkIterations": [],
+  "checkpoints": []
+}

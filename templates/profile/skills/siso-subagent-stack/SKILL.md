@@ -91,6 +91,10 @@ Common scorecard calls:
 {"op":"record","agent":"code-reviewer","version":"1.1.0","taskSet":"subagent-regression-v1","runs":20,"trueFindings":31,"falsePositives":6,"missedBugs":4,"avgCostUsd":0.08,"avgLatencySeconds":94}
 ```
 
+Terminal child runs are harvested automatically when their parent notification is delivered. Check the run record `scorecard` field or `.siso/evals/results` before promoting a route.
+
+`siso_spawn` uses scorecards to auto-select a trusted markdown project/user agent when the task clearly matches the agent purpose and no explicit agent is supplied. Pass an explicit `agent` when you need deterministic routing.
+
 For package/runtime adapter validation:
 
 ```text
@@ -135,6 +139,7 @@ npm run smoke:supervisor-tool
 npm run smoke:supervisor-persistence
 npm run smoke:agent-scorecards
 npm run smoke:agent-scorecards-tool
+npm run smoke:child-run-scorecards
 npm run smoke:extension-adapter-contract
 npm run smoke:agents-command
 npm run smoke:subagent-stack

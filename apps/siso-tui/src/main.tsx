@@ -1,12 +1,19 @@
 #!/usr/bin/env bun
 import { BoxRenderable, TextRenderable, createCliRenderer } from "@opentui/core";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createLocalSession, loadLocalSisoSnapshot } from "../../../packages/siso-tui/src/adapters/local-snapshot";
 import type { SisoUiEvent, SisoUiSession } from "../../../packages/siso-tui/src/contract/events";
-import { fit, line, renderEventRows, renderSessionListRows, renderStatusLine, renderTranscriptRows } from "../../../packages/siso-tui/src/components/rows";
+import { fit, line, renderEventRows, renderSessionListRows, renderTranscriptRows, renderWelcomePanelRows } from "../../../packages/siso-tui/src/components/rows";
 import { createSisoTuiRuntime, type SisoTuiRuntime, type SisoTuiRuntimeToolEvent } from "../../../packages/siso-tui/src/runtime/session-runtime";
 import { sisoTerminalTheme as theme } from "../../../packages/siso-tui/src/theme/siso-theme";
 
 type Route = "session" | "sessions" | "agents" | "status";
+
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const APP_VERSION = loadVersion();
 
 const renderer = await createCliRenderer({
   exitOnCtrlC: false,
@@ -20,6 +27,8 @@ const renderer = await createCliRenderer({
 let route: Route = "session";
 let input = "";
 let selectedSession = 0;
+let frame = 0;
+let lastRefresh = 0;
 let status = loadLocalSisoSnapshot();
 let sessions: SisoUiSession[] = [createLocalSession()];
 let currentSession = sessions[0]!;
@@ -94,9 +103,8 @@ function drawApp(width: number, left: number, height: number) {
 }
 
 function headerLine(width: number) {
-  const left = sending ? "SISO · streaming" : "SISO";
-  const right = renderStatusLine(status.status as Extract<SisoUiEvent, { type: "status" }>, Math.max(16, width - left.length - 2)).trim();
-  return fit(`${left}${" ".repeat(Math.max(1, width - left.length - right.length))}${right}`, width);
+  const left = sending ? `SISO  ${spinner()} working` : "SISO";
+  return fit(left, width);
 }
 
 function footerLine(width: number) {
@@ -129,21 +137,31 @@ function routeRows(width: number, maxRows: number) {
 
 function transcriptRows(width: number) {
   const rows: string[] = [];
-  for (const event of currentSession.events) {
+  for (const [index, event] of currentSession.events.entries()) {
     if (event.type === "status") continue;
-    rows.push(...renderEventRows(event, width), "");
+    rows.push(...renderChatEventRows(event, width, index), "");
   }
   if (!rows.length) {
-    rows.push(
-      fit("", width),
-      "",
-    );
+    rows.push(...renderWelcomePanelRows({
+      width,
+      version: APP_VERSION,
+      user: process.env.USER,
+      cwd: compactPath(process.env.SISO_TUI_CWD ?? process.cwd()),
+      recent: recentActivityRows(),
+    }));
   }
   return rows;
 }
 
+function renderChatEventRows(event: SisoUiEvent, width: number, index: number) {
+  if (event.type === "message" && event.role === "assistant" && !event.text.trim() && activeAssistantIndex === index) {
+    return [fit("SISO", width), fit(`  ${spinner()} thinking`, width)];
+  }
+  return renderEventRows(event, width);
+}
+
 function composerRows(width: number) {
-  const label = route === "session" ? input || (sending ? "SISO is working…" : "Message SISO…") : "Press c for chat";
+  const label = route === "session" ? input || (sending ? `${spinner()} Working...` : "Message SISO...") : "Press c for chat";
   return [
     `╭${line(width - 2)}╮`,
     `${fit(`│ › ${label}`, width - 1)}│`,
@@ -313,9 +331,14 @@ function openSelectedSession() {
 }
 
 const timer = setInterval(() => {
-  refresh();
+  frame += 1;
+  const now = Date.now();
+  if (now - lastRefresh > 3000) {
+    refresh();
+    lastRefresh = now;
+  }
   draw();
-}, 3000);
+}, 100);
 
 draw();
 renderer.start();
@@ -361,6 +384,33 @@ function scrollTranscript(delta: number) {
   const bodyRows = Math.max(8, renderer.terminalHeight - 8);
   const max = Math.max(0, transcriptRows(width).length - bodyRows);
   transcriptScrollOffset = Math.max(0, Math.min(max, transcriptScrollOffset + delta));
+}
+
+function spinner() {
+  return SPINNER_FRAMES[frame % SPINNER_FRAMES.length];
+}
+
+function recentActivityRows() {
+  return status.children.slice(0, 3).map((event) => {
+    if (event.type !== "agent") return "";
+    const label = event.status === "running" ? "Running" : event.status === "complete" ? "Completed" : "Failed";
+    return `${label} · ${event.role}${event.task ? ` · ${event.task}` : ""}`;
+  });
+}
+
+function compactPath(value: string) {
+  const home = homedir();
+  if (value === home) return "~";
+  return value.startsWith(`${home}/`) ? `~/${value.slice(home.length + 1)}` : value;
+}
+
+function loadVersion() {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  try {
+    return readFileSync(resolve(root, "VERSION"), "utf8").trim();
+  } catch {
+    return undefined;
+  }
 }
 
 function cleanup() {

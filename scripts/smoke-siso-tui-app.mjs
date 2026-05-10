@@ -45,6 +45,7 @@ for (const token of [
   "loadLocalSisoSnapshot",
   "headerLine",
   "transcriptRows",
+  "renderWelcomePanelRows",
   "createCliRenderer",
   "createSisoTuiRuntime",
   "submitPrompt",

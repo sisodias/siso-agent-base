@@ -402,13 +402,80 @@ function publish(ctx, task) {
         `worktree=${decision.needsWorktree} inherit_context=${decision.inheritContext} parallel=${decision.maxParallelAgents}`,
     ]);
 }
+function normalizeAgentKey(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/^project[._-]/, "")
+        .replace(/^user[._-]/, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+function scorecardMatchesAgent(scorecard, agent) {
+    const scorecardKey = normalizeAgentKey(scorecard.agent);
+    const keys = [agent.id, agent.name, `${agent.scope}.${agent.id}`, `${agent.scope}.${agent.name}`].map(normalizeAgentKey).filter(Boolean);
+    return keys.some((key) => scorecardKey === key || scorecardKey.endsWith(`-${key}`) || scorecardKey.endsWith(`.${key}`));
+}
+function taskMatchesAgentPurpose(task, agent, scorecard) {
+    const taskText = String(task ?? "").toLowerCase();
+    const purpose = [
+        agent.id,
+        agent.name,
+        agent.description,
+        agent.body,
+        ...(Array.isArray(agent.evals) ? agent.evals : []),
+        scorecard?.taskSet,
+    ].filter(Boolean).join(" ").toLowerCase();
+    const rolePatterns = [
+        ["review", /\b(review|audit|risk|security|critique|regression)\b/i],
+        ["test", /\b(test|verify|smoke|lint|typecheck|build)\b/i],
+        ["fix", /\b(fix|patch|debug|repair|resolve)\b/i],
+        ["doc", /\b(doc|docs|documentation|readme)\b/i],
+        ["package", /\b(package|extension|adapter|catalog|pi package)\b/i],
+        ["browser", /\b(browser|ui|screenshot|playwright|visual)\b/i],
+        ["plan", /\b(plan|architecture|design|strategy)\b/i],
+    ];
+    for (const [token, pattern] of rolePatterns) {
+        if (purpose.includes(token) && pattern.test(taskText))
+            return true;
+    }
+    const purposeTokens = new Set(purpose.split(/[^a-z0-9]+/).filter((token) => token.length >= 4));
+    const taskTokens = taskText.split(/[^a-z0-9]+/).filter((token) => token.length >= 4);
+    return taskTokens.some((token) => purposeTokens.has(token));
+}
+function scorecardProjectAgentRecommendation(task, registry, options = {}) {
+    const scorecards = listAgentScorecards({
+        ...(textParam({}, options, "cwd") ? { cwd: textParam({}, options, "cwd") } : {}),
+        limit: 200,
+    });
+    const candidates = [];
+    for (const agent of registry.agents) {
+        const matching = scorecards.filter((scorecard) => scorecardMatchesAgent(scorecard, agent));
+        if (!matching.length)
+            continue;
+        const best = matching.sort((left, right) => Number(right.score?.overall ?? 0) - Number(left.score?.overall ?? 0))[0];
+        if (Number(best.score?.overall ?? 0) < 0.5)
+            continue;
+        if (!taskMatchesAgentPurpose(task, agent, best))
+            continue;
+        candidates.push({ agent, scorecard: best, score: Number(best.score?.overall ?? 0) });
+    }
+    candidates.sort((left, right) => right.score - left.score);
+    return candidates[0];
+}
 function projectAgentDecision(task, params = {}, options = {}) {
-    const agentId = textParam(params, options, "agent") ?? textParam(params, options, "profile");
-    if (!agentId)
-        return undefined;
+    const explicitAgentId = textParam(params, options, "agent") ?? textParam(params, options, "profile");
     const registry = loadProjectAgentRegistry({
         ...(textParam(params, options, "cwd") ? { cwd: textParam(params, options, "cwd") } : {}),
     });
+    const recommendation = explicitAgentId && explicitAgentId !== "auto"
+        ? undefined
+        : scorecardProjectAgentRecommendation(task, registry, {
+            ...(textParam(params, options, "cwd") ? { cwd: textParam(params, options, "cwd") } : {}),
+        });
+    const agentId = explicitAgentId && explicitAgentId !== "auto" ? explicitAgentId : recommendation?.agent?.id;
+    if (!agentId)
+        return undefined;
     const agent = registry.agents.find((item) => item.id === agentId || item.name === agentId);
     if (!agent)
         throw new Error(`trusted project agent not found: ${agentId}`);
@@ -432,6 +499,7 @@ function projectAgentDecision(task, params = {}, options = {}) {
         projectAgent: {
             id: agent.id,
             name: agent.name,
+            description: agent.description,
             scope: agent.scope,
             sourcePath: agent.sourcePath,
             thinkingLevel: agent.thinkingLevel,
@@ -444,7 +512,10 @@ function projectAgentDecision(task, params = {}, options = {}) {
             evals: agent.evals,
             tools: agent.tools,
         },
-        rationale: `Trusted ${agent.scope} markdown agent selected from ${agent.sourcePath}.`,
+        ...(recommendation ? { scorecardRoute: { id: recommendation.scorecard.id, overall: recommendation.scorecard.score?.overall, path: recommendation.scorecard.path } } : {}),
+        rationale: recommendation
+            ? `Scorecard-selected trusted ${agent.scope} markdown agent from ${agent.sourcePath} using ${recommendation.scorecard.id}.`
+            : `Trusted ${agent.scope} markdown agent selected from ${agent.sourcePath}.`,
     };
 }
 function formatProjectAgentRegistryResult(registry) {
@@ -465,6 +536,7 @@ function formatProjectAgentRegistryResult(registry) {
         ...registry.agents.map((agent) => [
             `id=${agent.id}`,
             `scope=${agent.scope}`,
+            agent.description ? `description=${JSON.stringify(agent.description)}` : undefined,
             `model=${agent.model ?? "default"}`,
             `thinking=${agent.thinkingLevel ?? "default"}`,
             `cost=${agent.costTier ?? "default"}`,
