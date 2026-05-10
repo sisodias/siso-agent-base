@@ -7,11 +7,14 @@ secrets.env
 models.json
 
 # Local SISO/Pi runtime state
+.claude/
+.omc/
 .pi/
 .superpowers/
 .firecrawl/
 .siso/bin/
 .siso/agents/_runtime/
+.siso/evals/results/
 .siso/repo-index/
 .siso/reports/
 .siso/flight-runs/
