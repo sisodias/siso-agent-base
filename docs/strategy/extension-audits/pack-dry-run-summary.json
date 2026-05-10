@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-05-10T05:28:55.570Z",
+  "rows": [
+    {
+      "name": "pi-subagents",
+      "ok": true,
+      "status": 0,
+      "filename": "pi-subagents-0.24.0.tgz",
+      "version": "0.24.0",
+      "size": 242024,
+      "unpackedSize": 966402,
+      "fileCount": 81,
+      "entryCount": 81,
+      "stderr": ""
+    },
+    {
+      "name": "context-mode",
+      "ok": true,
+      "status": 0,
+      "filename": "context-mode-1.0.111.tgz",
+      "version": "1.0.111",
+      "size": 757276,
+      "unpackedSize": 2889675,
+      "fileCount": 301,
+      "entryCount": 301,
+      "stderr": ""
+    },
+    {
+      "name": "pi-hermes-memory",
+      "ok": true,
+      "status": 0,
+      "filename": "pi-hermes-memory-0.6.9.tgz",
+      "version": "0.6.9",
+      "size": 297026,
+      "unpackedSize": 675151,
+      "fileCount": 61,
+      "entryCount": 61,
+      "stderr": ""
+    },
+    {
+      "name": "@samfp/pi-memory",
+      "ok": true,
+      "status": 0,
+      "filename": "samfp-pi-memory-1.0.4.tgz",
+      "version": "1.0.4",
+      "size": 23769,
+      "unpackedSize": 91439,
+      "fileCount": 12,
+      "entryCount": 12,
+      "stderr": ""
+    },
+    {
+      "name": "pi-mcp-adapter",
+      "ok": true,
+      "status": 0,
+      "filename": "pi-mcp-adapter-2.5.4.tgz",
+      "version": "2.5.4",
+      "size": 153366,
+      "unpackedSize": 668889,
+      "fileCount": 41,
+      "entryCount": 41,
+      "stderr": ""
+    },
+    {
+      "name": "pi-lens",
+      "ok": true,
+      "status": 0,
+      "filename": "pi-lens-3.8.42.tgz",
+      "version": "3.8.42",
+      "size": 629831,
+      "unpackedSize": 2192198,
+      "fileCount": 544,
+      "entryCount": 544,
+      "stderr": ""
+    },
+    {
+      "name": "@juicesharp/rpiv-todo",
+      "ok": true,
+      "status": 0,
+      "filename": "juicesharp-rpiv-todo-1.3.1.tgz",
+      "version": "1.3.1",
+      "size": 20823,
+      "unpackedSize": 66773,
+      "fileCount": 25,
+      "entryCount": 25,
+      "stderr": ""
+    },
+    {
+      "name": "pi-web-access",
+      "ok": true,
+      "status": 0,
+      "filename": "pi-web-access-0.10.7.tgz",
+      "version": "0.10.7",
+      "size": 6402712,
+      "unpackedSize": 6852655,
+      "fileCount": 32,
+      "entryCount": 32,
+      "stderr": ""
+    }
+  ]
+}

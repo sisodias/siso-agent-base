@@ -22,6 +22,96 @@ if [[ "${1:-}" == "version" ]]; then
   exec "$INSTALL_DIR/bin/siso-version" "${@:2}"
 fi
 
+if [[ "${1:-}" == "agent" || "${1:-}" == "agents" ]]; then
+  if [[ -x "$BIN_DIR/siso-agent" ]]; then
+    exec "$BIN_DIR/siso-agent" "${@:2}"
+  fi
+  if [[ -x "$INSTALL_DIR/bin/siso-agent" ]]; then
+    exec "$INSTALL_DIR/bin/siso-agent" "${@:2}"
+  fi
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  exec "$SELF_DIR/siso-agent" "${@:2}"
+fi
+
+if [[ "${1:-}" == "tui-live" || "${1:-}" == "opentui" ]]; then
+  if [[ -x "$BIN_DIR/siso-opentui-live" ]]; then
+    exec "$BIN_DIR/siso-opentui-live" "${@:2}"
+  fi
+  if [[ -x "$INSTALL_DIR/bin/siso-opentui-live" ]]; then
+    exec "$INSTALL_DIR/bin/siso-opentui-live" "${@:2}"
+  fi
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  exec "$SELF_DIR/siso-opentui-live" "${@:2}"
+fi
+
+if [[ "${1:-}" == "tui" || "${1:-}" == "ui" ]]; then
+  if [[ -x "$BIN_DIR/siso-tui" ]]; then
+    exec "$BIN_DIR/siso-tui" "${@:2}"
+  fi
+  if [[ -x "$INSTALL_DIR/bin/siso-tui" ]]; then
+    exec "$INSTALL_DIR/bin/siso-tui" "${@:2}"
+  fi
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  exec "$SELF_DIR/siso-tui" "${@:2}"
+fi
+
+if [[ "${1:-}" == "preview" ]]; then
+  if [[ -x "$BIN_DIR/siso-tui-preview" ]]; then
+    exec "$BIN_DIR/siso-tui-preview" "${@:2}"
+  fi
+  if [[ -x "$INSTALL_DIR/bin/siso-tui-preview" ]]; then
+    exec "$INSTALL_DIR/bin/siso-tui-preview" "${@:2}"
+  fi
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  exec node "$SELF_DIR/siso-tui-preview" "${@:2}"
+fi
+
+if [[ "${1:-}" == "where" ]]; then
+  if [[ -x "$BIN_DIR/siso-where" ]]; then
+    exec "$BIN_DIR/siso-where" "${@:2}"
+  fi
+  exec "$INSTALL_DIR/bin/siso-where" "${@:2}"
+fi
+
+if [[ "${1:-}" == "smoke" ]]; then
+  smoke_target="${2:-all}"
+  if [[ "$smoke_target" == "help" || "$smoke_target" == "list" || "$smoke_target" == "--help" || "$smoke_target" == "-h" ]]; then
+    cat <<'EOF'
+SISO smoke commands
+
+Usage:
+  siso smoke [name]
+
+Common:
+  all
+  release
+  where
+  doctor
+  agents-command
+  child-notifications
+  subagent-lifecycle
+  subagents
+  status-widget
+  context
+  context-tier
+  renderers
+  syntax
+
+Examples:
+  siso smoke
+  siso smoke release
+  siso smoke doctor
+EOF
+    exit 0
+  fi
+  if [[ "$smoke_target" == smoke:* ]]; then
+    smoke_script="$smoke_target"
+  else
+    smoke_script="smoke:$smoke_target"
+  fi
+  exec npm --prefix "$INSTALL_DIR" run "$smoke_script" -- "${@:3}"
+fi
+
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
 EXT_DIR="$INSTALL_DIR/extensions"
@@ -52,12 +142,16 @@ fi
 export SISO_CHILD_RUN_DIR="${SISO_CHILD_RUN_DIR:-$HOME/.siso/agent/child-runs}"
 export SISO_TASK_STORE_PATH="${SISO_TASK_STORE_PATH:-$HOME/.siso/agent/tasks/siso-tasks.json}"
 export SISO_TRANSCRIPT_DIR="${SISO_TRANSCRIPT_DIR:-$HOME/.siso/agent/transcripts}"
+export SISO_CONTEXT_MANAGER_DIR="${SISO_CONTEXT_MANAGER_DIR:-$HOME/.siso/agent/context-manager}"
 export PI_OFFLINE="${PI_OFFLINE:-1}"
 export PI_TELEMETRY="${PI_TELEMETRY:-0}"
 export SISO_AGENT_ROUTER_TOOL_MODE="${SISO_AGENT_ROUTER_TOOL_MODE:-lean}"
+export SISO_CONTROLLER_FIRST_ROUTING="${SISO_CONTROLLER_FIRST_ROUTING:-1}"
 export SISO_STATUS_TOOL_MODE="${SISO_STATUS_TOOL_MODE:-lean}"
 export SISO_LIFECYCLE_TOOL_MODE="${SISO_LIFECYCLE_TOOL_MODE:-lean}"
-export SISO_STATUS_UI="${SISO_STATUS_UI:-compact}"
+export SISO_STATUS_UI="${SISO_STATUS_UI:-full}"
+export SISO_STATUS_POLL_MS="${SISO_STATUS_POLL_MS:-2000}"
+export SISO_AGENT_ROUTER_UI="${SISO_AGENT_ROUTER_UI:-compact}"
 export SISO_LIFECYCLE_UI="${SISO_LIFECYCLE_UI:-off}"
 export SISO_PI_FOOTER_CLEAN="${SISO_PI_FOOTER_CLEAN:-1}"
 export SISO_CONTEXT_FILTER="${SISO_CONTEXT_FILTER:-1}"

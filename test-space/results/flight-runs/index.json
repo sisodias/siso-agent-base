@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "runs": [
+    {
+      "runId": "code-intel-2026-05-09T17-50-40-292Z",
+      "file": "code-intel-2026-05-09T17-50-40-292Z.json",
+      "completedAt": "2026-05-09T17:50:57.575Z",
+      "status": "completed",
+      "overall": 82
+    },
+    {
+      "runId": "code-intel-2026-05-09T17-49-47-616Z",
+      "file": "code-intel-2026-05-09T17-49-47-616Z.json",
+      "completedAt": "2026-05-09T17:49:47.928Z",
+      "status": "failed",
+      "overall": 65
+    },
+    {
+      "runId": "context-filter-2026-05-09T17-45-47-967Z",
+      "file": "context-filter-2026-05-09T17-45-47-967Z.json",
+      "completedAt": "2026-05-09T17:45:49.582Z",
+      "status": "completed",
+      "overall": 79
+    },
+    {
+      "runId": "doctor-readiness-2026-05-09T17-19-16-621Z",
+      "file": "doctor-readiness-2026-05-09T17-19-16-621Z.json",
+      "completedAt": "2026-05-09T17:19:17.937Z",
+      "status": "completed",
+      "overall": 78
+    },
+    {
+      "runId": "doctor-readiness-2026-05-09T17-19-14-638Z",
+      "file": "doctor-readiness-2026-05-09T17-19-14-638Z.json",
+      "completedAt": "2026-05-09T17:19:16.000Z",
+      "status": "completed",
+      "overall": 78
+    },
+    {
+      "runId": "doctor-readiness-2026-05-09T17-18-45-174Z",
+      "file": "doctor-readiness-2026-05-09T17-18-45-174Z.json",
+      "completedAt": "2026-05-09T17:18:46.873Z",
+      "status": "completed",
+      "overall": 78
+    },
+    {
+      "runId": "doctor-readiness-2026-05-09T17-11-14-767Z",
+      "file": "doctor-readiness-2026-05-09T17-11-14-767Z.json",
+      "completedAt": "2026-05-09T17:11:16.522Z",
+      "status": "completed",
+      "overall": 78
+    },
+    {
+      "runId": "doctor-readiness-2026-05-09T17-05-21-017Z",
+      "file": "doctor-readiness-2026-05-09T17-05-21-017Z.json",
+      "completedAt": "2026-05-09T17:05:23.498Z",
+      "status": "completed",
+      "overall": 78
+    }
+  ]
+}

@@ -4,17 +4,188 @@ set -euo pipefail
 PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
 SECRETS_FILE="${SISO_SECRETS_FILE:-$HOME/.siso/agent/secrets.env}"
 INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+
+if [[ "${1:-}" == "drift" || "${1:-}" == "contracts" || "${1:-}" == "readiness" ]]; then
+  mode="${1:-readiness}"
+  ROOT_DIR="$(pwd)"
+  if [[ -f "$ROOT_DIR/package.json" && -f "$ROOT_DIR/VERSION" ]]; then
+    :
+  elif [[ -f "$INSTALL_DIR/package.json" && -f "$INSTALL_DIR/VERSION" ]]; then
+    ROOT_DIR="$INSTALL_DIR"
+  fi
+  cd "$ROOT_DIR"
+  case "$mode" in
+    drift)
+      exec node scripts/smoke-source-drift.mjs
+      ;;
+    contracts)
+      exec node scripts/smoke-contracts.mjs --changed
+      ;;
+    readiness)
+      node scripts/smoke-source-drift.mjs
+      node scripts/smoke-contracts.mjs --changed
+      node scripts/smoke-capability-registry.mjs
+      node scripts/smoke-test-space.mjs
+      node scripts/smoke-test-space-coverage.mjs
+      printf 'SISO_DOCTOR_READINESS_OK
+'
+      ;;
+  esac
+  exit 0
+fi
+
 EXT_DIR="$INSTALL_DIR/extensions"
-PI_BIN="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist/cli.js"
+PI_DIST_DIR="$INSTALL_DIR/node_modules/@mariozechner/pi-coding-agent/dist"
+PI_BIN="$PI_DIST_DIR/cli.js"
 GATEWAY_BASE="${SISO_GATEWAY_BASE:-https://shaans-mac-mini.tail100d11.ts.net:8443}"
 ANTHROPIC_URL="$GATEWAY_BASE/anthropic"
 OPENAI_URL="$GATEWAY_BASE/openai/v1/chat/completions"
+DEFAULT_MODEL="${SISO_DOCTOR_DEFAULT_MODEL:-}"
 
 ok=1
 
 pass() { printf 'ok  - %s\n' "$*"; }
 warn() { printf 'warn - %s\n' "$*"; }
 bad() { printf 'fail - %s\n' "$*"; ok=0; }
+profile_has_stale_local_routing() {
+  local candidates=(
+    "$PROFILE_DIR/settings.json"
+    "$PROFILE_DIR/models.json"
+    "$PROFILE_DIR/AGENTS.md"
+    "$PROFILE_DIR/SYSTEM.md"
+    "$PROFILE_DIR/skills"
+  )
+  local existing=()
+  local path
+  for path in "${candidates[@]}"; do
+    [[ -e "$path" ]] && existing+=("$path")
+  done
+  [[ "${#existing[@]}" -gt 0 ]] || return 1
+  grep -R "127.0.0.1:8080\\|localhost:8080\\|codex-proxy-local-key" "${existing[@]}" >/dev/null 2>&1
+}
+retry_count() {
+  local value="${1:-3}"
+  [[ "$value" =~ ^[0-9]+$ && "$value" -gt 0 ]] || value=3
+  printf '%s' "$value"
+}
+
+DOCTOR_NET_RETRIES="$(retry_count "${SISO_DOCTOR_NET_RETRIES:-3}")"
+
+curl_health() {
+  curl -fsSk --connect-timeout 5 --max-time 10 "$GATEWAY_BASE/health" >/dev/null 2>&1
+}
+
+gateway_health_ok() {
+  local attempt
+  for ((attempt=1; attempt<=DOCTOR_NET_RETRIES; attempt++)); do
+    if curl_health; then
+      return 0
+    fi
+    sleep "$attempt"
+  done
+  return 1
+}
+
+model_smoke_response() {
+  curl -sSk --connect-timeout 8 --max-time 30 "$OPENAI_URL" \
+    -H "Authorization: Bearer $SISO_BIFROST_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"gpt-5.4-mini","messages":[{"role":"user","content":"Reply exactly: SISO_DOCTOR_OK"}],"max_tokens":16}' 2>/dev/null || true
+}
+
+model_smoke_ok() {
+  local attempt response
+  for ((attempt=1; attempt<=DOCTOR_NET_RETRIES; attempt++)); do
+    response="$(model_smoke_response)"
+    if printf '%s' "$response" | grep -q 'SISO_DOCTOR_OK'; then
+      return 0
+    fi
+    sleep "$attempt"
+  done
+  return 1
+}
+
+default_model_id() {
+  if [[ -n "$DEFAULT_MODEL" ]]; then
+    printf '%s' "$DEFAULT_MODEL"
+    return 0
+  fi
+  if [[ -f "$PROFILE_DIR/settings.json" ]]; then
+    node -e '
+const fs = require("fs");
+try {
+  const settings = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  process.stdout.write(settings.defaultModel || "");
+} catch {}
+' "$PROFILE_DIR/settings.json" 2>/dev/null
+  fi
+}
+
+default_model_smoke_response() {
+  local model="$1"
+  curl -sSk --connect-timeout 8 --max-time 45 "$ANTHROPIC_URL/v1/messages" \
+    -H "x-api-key: $SISO_BIFROST_KEY" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "Content-Type: application/json" \
+    -d "{\"model\":\"$model\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply exactly: SISO_DOCTOR_OK\"}],\"max_tokens\":16}" 2>/dev/null || true
+}
+
+default_model_smoke_ok() {
+  local attempt response model
+  model="$(default_model_id)"
+  if [[ -z "$model" ]]; then
+    return 2
+  fi
+  for ((attempt=1; attempt<=DOCTOR_NET_RETRIES; attempt++)); do
+    response="$(default_model_smoke_response "$model")"
+    if printf '%s' "$response" | grep -q 'SISO_DOCTOR_OK'; then
+      return 0
+    fi
+    sleep "$attempt"
+  done
+  return 1
+}
+
+WORKSPACE_SOURCE="$HOME/SISO_Workspace/SISO_Agent_Base"
+LAB_PATH="$HOME/SISO_Workspace/pi-harness-lab"
+HIDDEN_LAB_PATH="$HOME/.siso/pi-harness-lab"
+
+case "$PWD" in
+  "$LAB_PATH"|"$LAB_PATH"/*|"$HIDDEN_LAB_PATH"|"$HIDDEN_LAB_PATH"/*|"$INSTALL_DIR"|"$INSTALL_DIR"/*)
+    warn "current directory is legacy/runtime; use $WORKSPACE_SOURCE for SISO Agent Base source work"
+    ;;
+esac
+
+if [[ -d "$WORKSPACE_SOURCE" ]]; then
+  pass "canonical source found at $WORKSPACE_SOURCE"
+else
+  warn "canonical source missing at $WORKSPACE_SOURCE"
+fi
+
+if [[ -f "$INSTALL_DIR/VERSION" && -f "$WORKSPACE_SOURCE/VERSION" ]]; then
+  installed_version="$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION")"
+  source_version="$(tr -d '[:space:]' < "$WORKSPACE_SOURCE/VERSION")"
+  if [[ "$installed_version" == "$source_version" ]]; then
+    pass "installed runtime matches canonical source version ($installed_version)"
+  else
+    bad "installed runtime version $installed_version differs from canonical source version $source_version; run local install/update"
+  fi
+elif [[ -f "$INSTALL_DIR/VERSION" ]]; then
+  installed_version="$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION")"
+  pass "installed runtime version found ($installed_version)"
+else
+  warn "installed runtime version missing at $INSTALL_DIR/VERSION"
+fi
+
+if [[ "${SISO_DOCTOR_VERSION_ONLY:-0}" == "1" ]]; then
+  if [[ "$ok" -eq 1 ]]; then
+    printf 'SISO doctor passed.\n'
+  else
+    printf 'SISO doctor found issues.\n' >&2
+    exit 1
+  fi
+  exit 0
+fi
 
 if command -v tailscale >/dev/null 2>&1; then
   pass "tailscale command found"
@@ -22,10 +193,10 @@ else
   warn "tailscale command not found; install Tailscale if gateway is unreachable"
 fi
 
-if curl -fsSk --connect-timeout 5 --max-time 10 "$GATEWAY_BASE/health" >/dev/null 2>&1; then
+if gateway_health_ok; then
   pass "gateway health reachable"
 else
-  warn "gateway health unreachable: $GATEWAY_BASE/health"
+  warn "gateway health unreachable after ${DOCTOR_NET_RETRIES} attempts: $GATEWAY_BASE/health"
 fi
 
 if [[ -f "$SECRETS_FILE" ]]; then
@@ -73,27 +244,84 @@ else
   bad "SISO HUD/router extensions missing; run siso update"
 fi
 
-if [[ -x "$PI_BIN" ]] && SISO_PI_PACKAGE_ROOT="$(dirname "$PI_BIN")" node "$INSTALL_DIR/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
+if [[ -x "$PI_BIN" ]] && SISO_PI_PACKAGE_ROOT="$PI_DIST_DIR" node "$INSTALL_DIR/scripts/smoke-pi-native-renderers.mjs" >/dev/null 2>&1; then
   pass "SISO native Pi renderer polish installed"
 else
   bad "SISO native Pi renderer polish missing; run siso update"
 fi
 
+if node "$INSTALL_DIR/scripts/smoke-context-filter.mjs" >/dev/null 2>&1; then
+  pass "SISO context provider filter installed"
+else
+  bad "SISO context provider filter missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-native-subagent-status.mjs" >/dev/null 2>&1; then
+  pass "SISO native subagent status installed"
+else
+  bad "SISO native subagent status missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-child-context-tier.mjs" >/dev/null 2>&1; then
+  pass "SISO child context tiers enforced"
+else
+  bad "SISO child context tiers missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-task-scope.mjs" >/dev/null 2>&1; then
+  pass "SISO durable task event logs installed"
+else
+  bad "SISO durable task event logs missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-status-agent-widget.mjs" >/dev/null 2>&1; then
+  pass "SISO active agent widget installed"
+else
+  bad "SISO active agent widget missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-status-lean-tools.mjs" >/dev/null 2>&1; then
+  pass "SISO lean status commands installed"
+else
+  bad "SISO lean status commands missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-router-lean-tools.mjs" >/dev/null 2>&1; then
+  pass "SISO lean router tools installed"
+else
+  bad "SISO lean router tools missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-improve-agent-system-skill.mjs" >/dev/null 2>&1; then
+  pass "SISO improve-agent-system skill installed"
+else
+  bad "SISO improve-agent-system skill missing; run siso update"
+fi
+
+if node "$INSTALL_DIR/scripts/smoke-child-notifications.mjs" >/dev/null 2>&1; then
+  pass "SISO child task notifications installed"
+else
+  bad "SISO child task notifications missing; run siso update"
+fi
+
 if [[ -n "${SISO_BIFROST_KEY:-}" ]]; then
-  response="$(
-    curl -sSk --connect-timeout 8 --max-time 30 "$OPENAI_URL" \
-      -H "Authorization: Bearer $SISO_BIFROST_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{"model":"gpt-5.4-mini","messages":[{"role":"user","content":"Reply exactly: SISO_DOCTOR_OK"}],"max_tokens":16}' || true
-  )"
-  if printf '%s' "$response" | grep -q 'SISO_DOCTOR_OK'; then
+  if model_smoke_ok; then
     pass "model smoke passed"
   else
-    bad "model smoke failed; key may be rejected or model route unavailable"
+    bad "model smoke failed after ${DOCTOR_NET_RETRIES} attempts; key may be rejected or model route unavailable"
+  fi
+
+  default_model="$(default_model_id)"
+  if [[ -z "$default_model" ]]; then
+    warn "default model smoke skipped; no defaultModel found in profile settings"
+  elif default_model_smoke_ok; then
+    pass "default model route smoke passed ($default_model)"
+  else
+    bad "default model route smoke failed after ${DOCTOR_NET_RETRIES} attempts ($default_model); gateway route may be unavailable"
   fi
 fi
 
-if grep -R "127.0.0.1:8080\\|localhost:8080\\|codex-proxy-local-key" "$PROFILE_DIR" >/dev/null 2>&1; then
+if profile_has_stale_local_routing; then
   bad "profile still contains stale local routing"
 else
   pass "no stale local routing in profile"

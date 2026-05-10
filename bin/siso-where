@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_DIR="${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+PROFILE_DIR="${SISO_PROFILE_DIR:-$HOME/.siso/agent/profile}"
+SISO_HOME="${SISO_HOME:-$HOME/.siso}"
+WORKSPACE_SOURCE="$HOME/SISO_Workspace/SISO_Agent_Base"
+LEGACY_SOURCE="$HOME/siso-agent-base"
+LAB_PATH="$HOME/SISO_Workspace/pi-harness-lab"
+HIDDEN_LAB_PATH="$HOME/.siso/pi-harness-lab"
+
+resolve_path() {
+  local path="$1"
+  if [[ -e "$path" ]]; then
+    (cd "$path" 2>/dev/null && pwd -P) || printf '%s\n' "$path"
+  else
+    printf 'missing: %s\n' "$path"
+  fi
+}
+
+path_state() {
+  local path="$1"
+  if [[ -e "$path" ]]; then
+    printf 'present'
+  else
+    printf 'missing'
+  fi
+}
+
+read_version() {
+  local path="$1"
+  if [[ -f "$path/VERSION" ]]; then
+    tr -d '[:space:]' < "$path/VERSION"
+  else
+    printf 'missing'
+  fi
+}
+
+canonical_source="$WORKSPACE_SOURCE"
+if [[ ! -d "$canonical_source" && -d "$LEGACY_SOURCE" ]]; then
+  canonical_source="$LEGACY_SOURCE"
+fi
+
+command_path="$(command -v siso || true)"
+git_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+source_version="$(read_version "$canonical_source")"
+runtime_version="$(read_version "$INSTALL_DIR")"
+version_status="unknown"
+if [[ "$source_version" != "missing" && "$runtime_version" != "missing" ]]; then
+  if [[ "$source_version" == "$runtime_version" ]]; then
+    version_status="match"
+  else
+    version_status="drift"
+  fi
+fi
+
+if [[ "${1:-}" == "--runtime" || "${1:-}" == "runtime" ]]; then
+  EXT_DIR="$INSTALL_DIR/extensions"
+  MODEL="${SISO_MODEL:-claude-opus-4-7}"
+  TOOLS="${SISO_TOOLS:-read,bash,edit,write,ls,siso,siso_context}"
+  printf 'SISO runtime map\n'
+  printf '\n'
+  printf 'provider:              bifrost-anthropic\n'
+  printf 'model:                 %s\n' "$MODEL"
+  printf 'tools:                 %s\n' "$TOOLS"
+  printf 'pi skills:             disabled (--no-skills)\n'
+  printf 'pi context files:      disabled (--no-context-files)\n'
+  printf 'pi extensions:         disabled (--no-extensions)\n'
+  printf 'manual extensions:\n'
+  for ext in \
+    "$EXT_DIR/siso-lifecycle/index.js" \
+    "$EXT_DIR/siso-context-manager/index.js" \
+    "$EXT_DIR/siso-status/index.js" \
+    "$EXT_DIR/siso-agent-router/index.js"; do
+    printf '  - %s %s\n' "$(path_state "$ext")" "$ext"
+  done
+  printf 'router tool mode:      %s\n' "${SISO_AGENT_ROUTER_TOOL_MODE:-lean}"
+  printf 'status tool mode:      %s\n' "${SISO_STATUS_TOOL_MODE:-lean}"
+  printf 'lifecycle tool mode:   %s\n' "${SISO_LIFECYCLE_TOOL_MODE:-lean}"
+  printf 'status ui:             %s\n' "${SISO_STATUS_UI:-full}"
+  printf 'router ui:             %s\n' "${SISO_AGENT_ROUTER_UI:-compact}"
+  printf 'context filter:        %s\n' "${SISO_CONTEXT_FILTER:-1}"
+  printf 'semantic librarian:    %s\n' "${SISO_CONTEXT_SEMANTIC_LIBRARIAN:-1}"
+  printf 'controller routing:    %s\n' "${SISO_CONTROLLER_FIRST_ROUTING:-1}"
+  printf 'spawn runtime:         %s\n' "${SISO_SPAWN_RUNTIME:-native-when-available}"
+  printf 'spawn background:      %s\n' "${SISO_SPAWN_DEFAULT_BACKGROUND:-0}"
+  printf 'install dir:           %s\n' "$(resolve_path "$INSTALL_DIR")"
+  printf 'profile dir:           %s\n' "$(resolve_path "$PROFILE_DIR")"
+  printf 'siso home:             %s\n' "$(resolve_path "$SISO_HOME")"
+  printf 'child runs:            %s\n' "$(resolve_path "${SISO_CHILD_RUN_DIR:-$HOME/.siso/agent/child-runs}")"
+  printf 'task store:            %s\n' "$(resolve_path "${SISO_TASK_STORE_PATH:-$HOME/.siso/agent/tasks/siso-tasks.json}")"
+  printf 'transcripts:           %s\n' "$(resolve_path "${SISO_TRANSCRIPT_DIR:-$HOME/.siso/agent/transcripts}")"
+  printf 'context manager:       %s\n' "$(resolve_path "${SISO_CONTEXT_MANAGER_DIR:-$HOME/.siso/agent/context-manager}")"
+  exit 0
+fi
+
+printf 'SISO Agent Base location map\n'
+printf '\n'
+printf 'command:          %s\n' "${command_path:-not found}"
+printf 'canonical source: %s\n' "$(resolve_path "$canonical_source")"
+printf 'source version:   %s\n' "$source_version"
+printf 'active runtime:   %s\n' "$(resolve_path "$INSTALL_DIR")"
+printf 'runtime version:  %s\n' "$runtime_version"
+printf 'version status:   %s\n' "$version_status"
+printf 'active profile:   %s\n' "$(resolve_path "$PROFILE_DIR")"
+printf 'siso home:        %s\n' "$(resolve_path "$SISO_HOME")"
+printf 'current cwd:      %s\n' "$PWD"
+printf 'git root:         %s\n' "${git_root:-none}"
+
+if [[ "$version_status" == "drift" ]]; then
+  printf '\n'
+  printf 'warning:\n'
+  printf '  Installed runtime version differs from canonical source version.\n'
+  printf '  Run the local install/update flow before testing SISO.\n'
+fi
+
+case "$PWD" in
+  "$LAB_PATH"|"$LAB_PATH"/*|"$HIDDEN_LAB_PATH"|"$HIDDEN_LAB_PATH"/*|"$INSTALL_DIR"|"$INSTALL_DIR"/*)
+    printf '\n'
+    printf 'warning:\n'
+    printf '  You are in a legacy lab or generated runtime folder.\n'
+    printf '  For SISO Agent Base source work, use:\n'
+    printf '    %s\n' "$WORKSPACE_SOURCE"
+    ;;
+esac
+
+if [[ -n "$git_root" && "$PWD" == "$LAB_PATH"* && "$git_root" == "$HOME/SISO_Workspace" ]]; then
+  printf '\n'
+  printf 'warning:\n'
+  printf '  pi-harness-lab is under the larger SISO_Workspace git root.\n'
+  printf '  Launching here can make agents inspect more workspace context than intended.\n'
+fi

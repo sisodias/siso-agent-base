@@ -1,0 +1,8 @@
+{
+  "total": 9,
+  "correctToolSelection": 9,
+  "nativeToolVsShellFallback": 9,
+  "wastedToolCalls": 0,
+  "stageMatch": 9,
+  "antiTriggerAvoided": 9
+}

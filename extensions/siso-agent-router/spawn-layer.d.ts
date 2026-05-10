@@ -1,7 +1,7 @@
 import { type RouteDecision } from "./route-policy.js";
 import type { ModelId, ModelLane } from "./profile-registry.js";
 import { type SisoAgentEvent } from "./agent-events.js";
-export type ChildAgentStatus = "planned" | "starting" | "running" | "background" | "completed" | "failed" | "timeout" | "aborted" | "unsupported";
+export type ChildAgentStatus = "planned" | "starting" | "running" | "background" | "queued" | "completed" | "failed" | "timeout" | "aborted" | "unsupported";
 export interface TokenUsage {
     input: number;
     output: number;
@@ -13,6 +13,11 @@ export interface ChildAgentSnapshot {
     profile: string;
     lane: ModelLane;
     model: ModelId;
+    rootSessionId?: string;
+    parentSessionId?: string;
+    ownerAgentId?: string;
+    spawnedByTaskId?: string;
+    depth?: number;
     startedAt?: string;
     updatedAt?: string;
     pid?: number;
@@ -27,6 +32,9 @@ export interface ChildAgentSnapshot {
     compactResult?: CompactChildResult;
     error?: string;
     runRecordPath?: string;
+    fleetId?: string;
+    queuedAt?: string;
+    queuedReason?: string;
 }
 export interface RouterStatusSnapshot {
     profile?: string;
@@ -40,6 +48,18 @@ export interface RouterStatusSnapshot {
 }
 declare global {
     var __SISO_ROUTER_STATUS__: RouterStatusSnapshot | undefined;
+}
+
+export interface ChildBudget {
+    maxRuntimeMs?: number;
+    maxTokens?: number;
+    maxToolCalls?: number;
+    maxParallel?: number;
+    maxChildren?: number;
+}
+export interface FleetSpawnPolicyError {
+    kind: "max_parallel" | "max_children";
+    reason: string;
 }
 export interface SpawnOptions {
     command?: string;
@@ -55,6 +75,12 @@ export interface SpawnOptions {
     maxDepth?: number;
     decision?: RouteDecision;
     noTools?: boolean;
+    queue?: boolean;
+    fleetId?: string;
+    budget?: ChildBudget;
+    maxParallel?: number;
+    maxChildren?: number;
+    ctx?: unknown;
 }
 export interface SpawnSpec {
     adapter: "pi" | "codex-pi" | "codex-cli";
@@ -92,6 +118,11 @@ export interface SpawnRunResult {
     stdoutPath?: string;
     stderrPath?: string;
     events?: SisoAgentEvent[];
+    fleetId?: string;
+    budget?: ChildBudget;
+    queuedAt?: string;
+    queuedReason?: string;
+    queuedSpawn?: Record<string, unknown>;
 }
 export interface CompactChildResult {
     summary: string;
@@ -126,11 +157,18 @@ export interface ChildRunRecord {
     notified?: boolean;
     parentSessionId?: string;
     events?: SisoAgentEvent[];
+    task?: string;
+    fleetId?: string;
+    budget?: ChildBudget;
+    queuedAt?: string;
+    queuedReason?: string;
+    queuedSpawn?: Record<string, unknown>;
 }
 export interface ChildRunCleanupOptions {
     maxAgeHours?: number;
     maxRuns?: number;
     dryRun?: boolean;
+    confirm?: boolean;
 }
 export interface ChildRunCleanupResult {
     scannedRuns: number;
@@ -161,19 +199,27 @@ export interface ChildControlInput {
     background?: boolean;
     timeoutMs?: number;
     spawnOptions?: SpawnOptions;
+    ctx?: unknown;
 }
 export interface ChildControlResult {
     action: ChildControlAction;
-    records: ChildRunRecord[];
+    records: CompactChildRunRecord[];
     text: string;
 }
-export type PublicSpawnRunResult = Omit<SpawnRunResult, "stdout" | "stderr"> & {
+export type CompactChildRunRecord = Omit<ChildRunRecord, "events"> & {
+    eventCount: number;
+};
+export type PublicSpawnRunResult = Omit<SpawnRunResult, "stdout" | "stderr" | "command" | "args" | "task" | "events"> & {
+    eventCount?: number;
     stderrPreview: string;
 };
 export declare function readChildRunRecord(id: string): ChildRunRecord | undefined;
-export declare function collectChildRunRecord(id: string): ChildRunRecord | undefined;
-export declare function collectLatestChildRunRecords(limit?: number): ChildRunRecord[];
-export declare function controlChildRun(input: ChildControlInput): Promise<ChildControlResult>;
+export declare function sanitizeChildBudget(budget?: ChildBudget | null): ChildBudget | undefined;
+export declare function checkFleetSpawnPolicy(options?: SpawnOptions): FleetSpawnPolicyError | undefined;
+export declare function collectChildRunRecord(id: string, scope?: Record<string, unknown>): ChildRunRecord | undefined;
+export declare function collectLatestChildRunRecords(limit?: number, scope?: Record<string, unknown>): ChildRunRecord[];
+export declare function compactChildRunRecord(record: ChildRunRecord): CompactChildRunRecord;
+export declare function controlChildRun(input: ChildControlInput, scope?: Record<string, unknown>): Promise<ChildControlResult>;
 export declare function cleanupChildRunLogs(options?: ChildRunCleanupOptions): ChildRunCleanupResult;
 export declare function getChildRunStorageStats(): ChildRunStorageStats;
 export declare function truncateForParent(text: string, limit?: number): {
@@ -184,7 +230,7 @@ export declare function truncateForParent(text: string, limit?: number): {
 export declare function compactChildResult(text: string): CompactChildResult;
 export declare function setRouterStatus(patch: Partial<RouterStatusSnapshot>): RouterStatusSnapshot;
 export declare function isTerminalChildStatus(status: ChildAgentStatus | string | undefined): boolean;
-export declare function setChildStatus(snapshot: ChildAgentSnapshot, activate: boolean): RouterStatusSnapshot;
+export declare function setChildStatus(snapshot: ChildAgentSnapshot, activate: boolean, scope?: Record<string, unknown>): RouterStatusSnapshot;
 export declare function getRouterStatus(): RouterStatusSnapshot | undefined;
 export declare function normalizePiTools(tools: string[]): string[];
 export declare function buildChildPrompt(task: string, decision: RouteDecision, contextPacket?: string): string;

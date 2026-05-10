@@ -1,0 +1,23 @@
+{
+  "name": "@siso/opentui-app",
+  "private": true,
+  "type": "module",
+  "description": "Experimental OpenTUI frontend for SISO Agent Base",
+  "dependencies": {
+    "@opentui/core": "^0.2.6",
+    "@opentui/solid": "^0.2.6",
+    "@opentui/keymap": "^0.2.6",
+    "solid-js": "^1.9.10",
+    "opentui-spinner": "^0.1.0",
+    "fuzzysort": "^3.1.0",
+    "remeda": "^2.30.0",
+    "strip-ansi": "^7.1.2",
+    "semver": "^7.7.3",
+    "open": "^10.2.0",
+    "@solid-primitives/event-bus": "^1.1.1"
+  },
+  "scripts": {
+    "start": "bun src/main.tsx",
+    "check": "bun --bun src/main.tsx --check"
+  }
+}

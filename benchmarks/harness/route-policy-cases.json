@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "description": "Route policy cases for moving SISO from regex/cost routing toward GPT-5.5 controller allocation. currentRoute is the known behavior before the controller-first rewrite; desiredOutcome is the target behavior.",
+  "cases": [
+    {
+      "id": "stripe-subscription-stack",
+      "task": "Implement Stripe subscription checkout, webhook idempotency, and billing portal in the Next.js app",
+      "currentRoute": "minimax.worker",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["payments", "backend", "security", "database"],
+        "specialists": ["payments-stripe", "backend-api", "security-reviewer"],
+        "reason": "Payments and webhook idempotency are high-risk multi-domain implementation work."
+      }
+    },
+    {
+      "id": "auth-architecture-implementation",
+      "task": "Design and implement authentication with middleware, session storage, and route guards",
+      "currentRoute": "minimax.worker",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["auth", "security", "backend", "routing"],
+        "specialists": ["auth-security", "backend-api"],
+        "reason": "Architecture plus implementation should not bypass the GPT-5.5 controller because of the word implement."
+      }
+    },
+    {
+      "id": "security-audit-and-patch",
+      "task": "Audit the security of auth, payments, and deployment config, then patch the highest risk issues",
+      "currentRoute": "minimax.worker",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["security", "auth", "payments", "deployment"],
+        "specialists": ["security-reviewer", "auth-security", "deployment-infra"],
+        "reason": "Security audit plus mutation requires review-first planning and controlled patching."
+      }
+    },
+    {
+      "id": "react-billing-dashboard",
+      "task": "Create a React dashboard for customer billing analytics with charts and filters",
+      "currentRoute": "minimax.scout",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["frontend", "analytics", "payments"],
+        "specialists": ["frontend-react", "data-visualization"],
+        "reason": "Create is implementation language and should not route to read-only scout."
+      }
+    },
+    {
+      "id": "nextjs-admin-page",
+      "task": "Make a new Next.js page for the admin dashboard",
+      "currentRoute": "minimax.scout",
+      "desiredOutcome": {
+        "routing": "direct_or_controller_worker",
+        "controller": "gpt55",
+        "domains": ["frontend", "nextjs"],
+        "specialists": ["frontend-nextjs"],
+        "reason": "Make is implementation language; route should be worker-capable at minimum."
+      }
+    },
+    {
+      "id": "oauth-cookie-hardening",
+      "task": "Create OAuth login and harden session cookie policy",
+      "currentRoute": "minimax.scout",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["auth", "security"],
+        "specialists": ["auth-security"],
+        "reason": "OAuth and cookie hardening are security-sensitive implementation tasks."
+      }
+    },
+    {
+      "id": "domain-allocation-plan",
+      "task": "Build a domain specialist allocation plan for auth, billing, frontend, data, and deployment",
+      "currentRoute": "minimax.verifier",
+      "desiredOutcome": {
+        "routing": "controller_planning",
+        "controller": "gpt55",
+        "domains": ["planning", "auth", "payments", "frontend", "data", "deployment"],
+        "specialists": ["planner"],
+        "reason": "Build can be a planning verb; allocation plans belong to the controller, not verifier."
+      }
+    },
+    {
+      "id": "large-cross-domain-refactor",
+      "task": "Refactor 8 modules across frontend, API, auth, billing, and tests",
+      "currentRoute": "codex.rescue",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["frontend", "backend", "auth", "payments", "testing"],
+        "specialists": ["frontend-react", "backend-api", "auth-security", "payments-stripe", "test-verifier"],
+        "reason": "Large planned refactor is not necessarily rescue/debug; it needs task allocation and verification."
+      }
+    },
+    {
+      "id": "json-webhook-database-update",
+      "task": "Parse JSON webhook payloads and update database writes deterministically",
+      "currentRoute": "gpt54mini.worker",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["backend", "database", "webhooks"],
+        "specialists": ["backend-api", "database"],
+        "reason": "JSON/parse words should not override webhook/database domain risk."
+      }
+    },
+    {
+      "id": "auth-regression-review-fix",
+      "task": "Review and fix regression in auth middleware",
+      "currentRoute": "minimax.worker",
+      "desiredOutcome": {
+        "routing": "controller_allocation",
+        "controller": "gpt55",
+        "domains": ["auth", "security", "debugging"],
+        "specialists": ["auth-security", "debugger"],
+        "reason": "Review/regression semantics should not be lost because fix is present."
+      }
+    }
+  ]
+}

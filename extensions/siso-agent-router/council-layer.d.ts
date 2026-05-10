@@ -1,7 +1,6 @@
 import { type ModelId, type ModelLane, type ProfileRole } from "./profile-registry.js";
 import { type CompactChildResult, type SpawnRunResult, type TokenUsage } from "./spawn-layer.js";
 import type { RouteDecision } from "./route-policy.js";
-import type { SisoAgentEvent } from "./agent-events.js";
 export type CouncilMode = "compare" | "synthesize" | "review";
 export interface CouncilOptions {
     mode?: CouncilMode;
@@ -23,7 +22,7 @@ export interface CouncilMemberResult {
     tokens: TokenUsage;
     result: CompactChildResult;
     recordPath?: string;
-    events?: SisoAgentEvent[];
+    eventCount?: number;
 }
 export interface CouncilRunResult {
     mode: CouncilMode;
@@ -32,7 +31,7 @@ export interface CouncilRunResult {
     members: CouncilMemberResult[];
     synthesis: CompactChildResult;
     totalTokens: number;
-    events: SisoAgentEvent[];
+    eventCount: number;
 }
 export declare function decisionForProfile(profileId: string, rationale?: string): RouteDecision;
 export declare function runCouncil(task: string, options?: CouncilOptions, signal?: AbortSignal): Promise<CouncilRunResult>;

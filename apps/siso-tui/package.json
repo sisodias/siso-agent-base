@@ -1,0 +1,15 @@
+{
+  "name": "@siso/tui",
+  "private": true,
+  "type": "module",
+  "description": "Fresh OpenTUI terminal renderer for SISO Agent Base",
+  "scripts": {
+    "start": "bun src/main.tsx",
+    "check": "bun --bun src/main.tsx --check"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.2.6",
+    "@opentui/solid": "^0.2.6",
+    "solid-js": "^1.9.12"
+  }
+}

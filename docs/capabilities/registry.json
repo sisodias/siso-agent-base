@@ -1,0 +1,1313 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-10",
+  "statuses": [
+    "idea",
+    "researched",
+    "planned",
+    "in-progress",
+    "implemented",
+    "validated",
+    "released",
+    "deprecated",
+    "rejected"
+  ],
+  "capabilities": [
+    {
+      "id": "capability-registry",
+      "name": "Capability Registry",
+      "status": "validated",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Repo-owned feature memory for current capabilities, ideas, validation, and changelog candidates.",
+      "implementedIn": [
+        "docs/capabilities/README.md",
+        "docs/capabilities/registry.json",
+        "docs/capabilities/current.md",
+        "docs/capabilities/ideas.md",
+        "docs/capabilities/changelog-candidates.md",
+        "scripts/smoke-capability-registry.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:capabilities"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "test-space",
+      "name": "SISO Test Space",
+      "status": "validated",
+      "category": "quality",
+      "priority": "high",
+      "exists": true,
+      "summary": "Capability-linked testing lab that indexes existing smoke scripts/artifacts/plans and tracks scenarios, results, coverage, and improvement backlog.",
+      "implementedIn": [
+        "test-space/README.md",
+        "test-space/test-plan.json",
+        "test-space/coverage.json",
+        "test-space/scenarios/",
+        "test-space/notes/improvements.md",
+        "scripts/smoke-test-space.mjs",
+        "test-space/results/coverage-summary.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:test-space",
+        "npm run smoke:test-space-coverage"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "capability-audit-smoke",
+      "name": "Capability Audit Smoke",
+      "status": "idea",
+      "category": "agent-system",
+      "priority": "medium",
+      "exists": false,
+      "summary": "Automatically compare package scripts/changelog/modules to registry and flag likely missing capabilities.",
+      "implementedIn": [],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "siso-wrapper-launcher",
+      "name": "SISO Wrapper Launcher",
+      "status": "validated",
+      "category": "launcher",
+      "priority": "high",
+      "exists": true,
+      "summary": "Public siso launcher/wrapper that reports version, install/profile dirs, and routes through the bundled agent base.",
+      "implementedIn": [
+        "bin/siso",
+        "scripts/smoke-siso-wrapper.mjs",
+        "scripts/smoke-siso-where.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:wrapper",
+        "npm run smoke:where"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "install-update-repair",
+      "name": "Install Update Repair",
+      "status": "validated",
+      "category": "install",
+      "priority": "high",
+      "exists": true,
+      "summary": "Local installer/update scripts repair stale runtime dependencies and launcher/install mismatch.",
+      "implementedIn": [
+        "install.sh",
+        "scripts/install-local.sh",
+        "bin/siso-update",
+        "bin/siso-doctor"
+      ],
+      "validatedBy": [
+        "npm run smoke:doctor",
+        "npm run smoke:wrapper"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "siso-doctor",
+      "name": "SISO Doctor",
+      "status": "validated",
+      "category": "doctor",
+      "priority": "high",
+      "exists": true,
+      "summary": "Doctor command for local install/runtime diagnostics.",
+      "implementedIn": [
+        "bin/siso-doctor",
+        "scripts/smoke-siso-doctor.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:doctor"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "doctor-readiness",
+      "name": "Doctor Readiness Commands",
+      "status": "validated",
+      "category": "doctor",
+      "priority": "high",
+      "exists": true,
+      "summary": "Expose source drift, contract diff, and combined readiness checks through siso doctor subcommands.",
+      "implementedIn": [
+        "bin/siso-doctor",
+        "scripts/smoke-doctor-readiness.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:doctor-readiness"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "release-metadata-smoke",
+      "name": "Release Metadata Smoke",
+      "status": "validated",
+      "category": "release",
+      "priority": "high",
+      "exists": true,
+      "summary": "Validate release/version metadata consistency for packaged SISO releases.",
+      "implementedIn": [
+        "scripts/smoke-release-metadata.mjs",
+        "VERSION",
+        "package.json",
+        "releases/latest.json",
+        "CHANGELOG.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:release"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "changelog-candidate-collector",
+      "name": "Changelog Candidate Collector",
+      "status": "implemented",
+      "category": "release",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Manual pending-release note file consumed by release agents until automated capability changelog extraction exists.",
+      "implementedIn": [
+        "docs/capabilities/changelog-candidates.md"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "smoke-all-suite",
+      "name": "Composite Smoke Suite",
+      "status": "validated",
+      "category": "quality",
+      "priority": "high",
+      "exists": true,
+      "summary": "smoke:all composes release, wrapper, doctor, router/status/context/subagent/skill/render/TUI/syntax checks.",
+      "implementedIn": [
+        "package.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:all"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "route-policy",
+      "name": "Route Policy",
+      "status": "validated",
+      "category": "routing",
+      "priority": "high",
+      "exists": true,
+      "summary": "Choose the cheapest capable profile/permission/worktree route for a task before spawning.",
+      "implementedIn": [
+        "extensions/siso-agent-router/route-policy.js",
+        "extensions/siso-agent-router/profile-registry.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:router-lean"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "permission-aware-routing",
+      "name": "Permission Aware Routing",
+      "status": "implemented",
+      "category": "routing",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Route/profile decisions account for permission/worktree modes and risky operations.",
+      "implementedIn": [
+        "extensions/siso-agent-router/route-policy.js",
+        "extensions/siso-agent-router/profile-registry.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "profile-registry",
+      "name": "Profile Registry",
+      "status": "implemented",
+      "category": "routing",
+      "priority": "high",
+      "exists": true,
+      "summary": "Registry of SISO/Pi profile ids, route kinds, model/tool defaults, and specialization metadata.",
+      "implementedIn": [
+        "extensions/siso-agent-router/profile-registry.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "role-prompt-contracts",
+      "name": "Role Prompt Contracts",
+      "status": "implemented",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Role-specific prompt contracts for scout, worker, verifier, reviewer, planner, oracle, rescue, and codex agents.",
+      "implementedIn": [
+        "extensions/siso-agent-router/agent-prompts.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "bifrost-routing",
+      "name": "Bifrost Gateway Routing",
+      "status": "validated",
+      "category": "routing",
+      "priority": "high",
+      "exists": true,
+      "summary": "Bifrost-first model/provider routing with duplicate/dashboard diagnostics.",
+      "implementedIn": [
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-bifrost-dashboard.mjs",
+        "scripts/smoke-bifrost-duplicates.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:bifrost-dashboard",
+        "npm run smoke:bifrost-duplicates"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "router-lean",
+      "name": "Lean Router Surface",
+      "status": "validated",
+      "category": "routing",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Compact router outputs/details to prevent context bloat.",
+      "implementedIn": [
+        "scripts/smoke-router-lean-tools.mjs",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:router-lean"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "child-agent-spawn",
+      "name": "Child Agent Spawn",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Spawn isolated child agents with route/profile/model handling and runtime guardrails.",
+      "implementedIn": [
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-agent-router/native-subagent-bridge.js",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:subagents",
+        "npm run smoke:spawn-result"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "session-scoped-agent-runtime",
+      "name": "Session-Scoped Agent Runtime",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Claude Code-style session-owned agent store for subagent records, compact event counts, router projections, and per-chat HUD isolation while preserving legacy child-run writes.",
+      "implementedIn": [
+        "extensions/siso-agent-router/session-store.js",
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-status/index.js",
+        "scripts/smoke-session-store.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:session-store",
+        "npm run smoke:status-widget",
+        "npm run smoke:subagents"
+      ],
+      "releasedIn": "0.1.96",
+      "changelogCandidate": true
+    },
+    {
+      "id": "native-subagent-bridge",
+      "name": "Native Subagent Bridge",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Bridge SISO spawn/council/workflow calls into native subagent execution and lifecycle reporting.",
+      "implementedIn": [
+        "extensions/siso-agent-router/native-subagent-bridge.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:subagent-lifecycle",
+        "npm run smoke:child-notifications"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "child-agent-notifications",
+      "name": "Child Agent Notifications",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Return child completion/timeout notifications to the parent agent workflow.",
+      "implementedIn": [
+        "extensions/siso-agent-router/notifications.js",
+        "extensions/siso-agent-router/native-subagent-bridge.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:child-notifications",
+        "npm run smoke:subagent-lifecycle"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "child-run-control",
+      "name": "Child Run Control",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "List/status/log/interrupt/resume child-agent runs and expose persisted compact summaries/stats/cleanup.",
+      "implementedIn": [
+        "extensions/siso-agent-router/index.js",
+        "extensions/siso-agent-router/notifications.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:child-control",
+        "npm run smoke:child-notifications"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "spawn-result-normalization",
+      "name": "Spawn Result Normalization",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Normalize child spawn/native bridge results into compact public results including status, usage, and notification summaries.",
+      "implementedIn": [
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-agent-router/native-subagent-bridge.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:spawn-result",
+        "npm run smoke:composite-result"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "runtime-guardrails",
+      "name": "Runtime Guardrails",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Preserve maxRuntimeMs and maxParallel operational guardrails while avoiding normal token/tool hard caps.",
+      "implementedIn": [
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-agent-router/native-subagent-bridge.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:subagent-lifecycle",
+        "npm run smoke:child-control"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "fleet-queue-control",
+      "name": "Fleet Queue Control",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "Parent-scoped fleet concurrency, queued spawns, maxParallel handling, and fleet status reporting.",
+      "implementedIn": [
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:agents-command",
+        "npm run smoke:child-control"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "agents-command",
+      "name": "Agents Command Surface",
+      "status": "validated",
+      "category": "subagents",
+      "priority": "high",
+      "exists": true,
+      "summary": "/agents command support for list, fleet, queue, report, detail, events, files, peek, name, resume, and handoff views.",
+      "implementedIn": [
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:agents-command"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "handoff-packets",
+      "name": "Agent Handoff Packets",
+      "status": "implemented",
+      "category": "subagents",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Compact handoff-oriented child/agent result packets for continuation and summaries.",
+      "implementedIn": [
+        "extensions/siso-agent-router/index.js",
+        "extensions/siso-agent-router/spawn-layer.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "worker-guard",
+      "name": "Worker Guard",
+      "status": "implemented",
+      "category": "subagents",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Worker guard helpers for spawned agent execution safety/lifecycle boundaries.",
+      "implementedIn": [
+        "extensions/siso-agent-router/worker-guard.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "council-orchestration",
+      "name": "Council Orchestration",
+      "status": "implemented",
+      "category": "orchestration",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Run compare/synthesize/review style multi-member agent councils through configured profiles.",
+      "implementedIn": [
+        "extensions/siso-agent-router/council-layer.js",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "workflow-orchestration",
+      "name": "Workflow Orchestration",
+      "status": "implemented",
+      "category": "orchestration",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Coordinate multi-worker workflows with task creation, council-style planning, and worker execution.",
+      "implementedIn": [
+        "extensions/siso-agent-router/workflow-layer.js",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "durable-task-store",
+      "name": "Durable Task Store",
+      "status": "validated",
+      "category": "tasks",
+      "priority": "high",
+      "exists": true,
+      "summary": "File-backed SISO task registry with route/profile metadata for orchestration and status.",
+      "implementedIn": [
+        "extensions/siso-agent-router/task-store.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:task-scope"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "task-scope-management",
+      "name": "Task Scope Management",
+      "status": "validated",
+      "category": "tasks",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Task ownership/status/scope metadata for agent work tracking.",
+      "implementedIn": [
+        "extensions/siso-agent-router/task-store.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:task-scope"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "global-task-registry",
+      "name": "Global Task Registry",
+      "status": "implemented",
+      "category": "tasks",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Home-directory task/run registry for persisted agent task records, logs, status formatting, and cleanup.",
+      "implementedIn": [
+        "extensions/siso-agent-router/task-registry.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "context-filtering",
+      "name": "Context Filtering and Retrieval",
+      "status": "validated",
+      "category": "context",
+      "priority": "high",
+      "exists": true,
+      "summary": "Summarize noisy/large tool results while preserving raw output for retrieval.",
+      "implementedIn": [
+        "extensions/siso-agent-router/context-loader.js",
+        "extensions/siso-agent-router/child-context-guard.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:context",
+        "npm run smoke:context-explain",
+        "npm run smoke:context-details",
+        "npm run smoke:context-tier"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "context-memory-tools",
+      "name": "Context Memory Tools",
+      "status": "validated",
+      "category": "context",
+      "priority": "high",
+      "exists": true,
+      "summary": "siso_context operations for status, distill, latest, memory, central, supersede, pointers, retrieve, with bounded details.",
+      "implementedIn": [
+        "extensions/siso-agent-router/context-loader.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:context-details",
+        "npm run smoke:context"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "skill-loading",
+      "name": "Skill Loading",
+      "status": "validated",
+      "category": "skills",
+      "priority": "high",
+      "exists": true,
+      "summary": "Load profile skills such as improve-agent-system before sensitive infrastructure changes.",
+      "implementedIn": [
+        "extensions/siso-agent-router/skill-hub.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:improve-skill",
+        "npm run smoke:skill-slash"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "repo-candidate-catalog",
+      "name": "Repo Candidate Catalog",
+      "status": "implemented",
+      "category": "research",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Query broad/cloned repo candidate catalogs and feature recommendations without loading huge Markdown catalogs.",
+      "implementedIn": [
+        "extensions/siso-agent-router/repo-catalog.js",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "research-integration-queue",
+      "name": "Research Integration Queue",
+      "status": "implemented",
+      "category": "research",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Recommend build-now integration queues from cloned/open-source agent research categories.",
+      "implementedIn": [
+        "extensions/siso-agent-router/repo-catalog.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "codex-case-packets",
+      "name": "Codex Case Packets",
+      "status": "implemented",
+      "category": "research",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Load and format Codex case packets for research/integration comparisons.",
+      "implementedIn": [
+        "extensions/siso-agent-router/codex-case-packet.js"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "structured-event-stream",
+      "name": "Structured Event Stream",
+      "status": "implemented",
+      "category": "observability",
+      "priority": "high",
+      "exists": true,
+      "summary": "Current agent event types/formatting for run/model/tool/permission/status events; broader append-only event log is still planned.",
+      "implementedIn": [
+        "extensions/siso-agent-router/agent-events.js",
+        "extensions/siso-agent-router/agent-events.d.ts"
+      ],
+      "validatedBy": [
+        "npm run smoke:timeline",
+        "npm run smoke:status-widget"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "status-widget",
+      "name": "Status Agent Widget",
+      "status": "validated",
+      "category": "status",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Render compact agent/status timeline widgets for SISO status surfaces.",
+      "implementedIn": [
+        "scripts/smoke-status-agent-widget.mjs",
+        "extensions/siso-agent-router/agent-events.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:status-widget",
+        "npm run smoke:timeline"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "status-lean",
+      "name": "Lean Status Surface",
+      "status": "validated",
+      "category": "status",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Compact status output that avoids returning huge raw details while preserving useful summaries.",
+      "implementedIn": [
+        "scripts/smoke-status-lean-tools.mjs",
+        "extensions/siso-agent-router/index.js"
+      ],
+      "validatedBy": [
+        "npm run smoke:status-lean"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "bifrost-dashboard",
+      "name": "Bifrost Dashboard",
+      "status": "validated",
+      "category": "routing",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Dashboard/diagnostic smoke coverage for Bifrost gateway routing and duplicate handling.",
+      "implementedIn": [
+        "scripts/smoke-bifrost-dashboard.mjs",
+        "scripts/smoke-bifrost-duplicates.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:bifrost-dashboard",
+        "npm run smoke:bifrost-duplicates"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "tui-demo-workbench",
+      "name": "TUI Demo Workbench",
+      "status": "validated",
+      "category": "tui",
+      "priority": "high",
+      "exists": true,
+      "summary": "Clean-room static terminal UI workbench and gallery for SISO R1 component exploration.",
+      "implementedIn": [
+        "scripts/tui-demo.mjs",
+        "scripts/tui-demo-gallery.mjs",
+        "scripts/tui-demo-components/index.mjs",
+        "docs/research/siso-r1-tui-component-inventory.md",
+        "docs/research/siso-tui-workbench.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:tui-demo"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "tui-gallery",
+      "name": "TUI Gallery",
+      "status": "validated",
+      "category": "tui",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Static gallery runner for TUI component modes and responsive widths.",
+      "implementedIn": [
+        "scripts/tui-demo-gallery.mjs",
+        "scripts/tui-demo.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:tui-demo"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "tui-theme-components",
+      "name": "TUI Theme Components",
+      "status": "validated",
+      "category": "tui",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Reusable clean-room TUI theme helpers/components for cards, chips, breadcrumbs, permissions, agents, and diff snippets.",
+      "implementedIn": [
+        "scripts/tui-demo-components/index.mjs",
+        "scripts/tui-demo-components/theme.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:tui-demo"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "tui-workbench-docs",
+      "name": "TUI Workbench Documentation",
+      "status": "implemented",
+      "category": "tui",
+      "priority": "low",
+      "exists": true,
+      "summary": "Research docs and lessons for SISO R1 TUI rebuild and clean-room component inventory.",
+      "implementedIn": [
+        "docs/research/siso-r1-tui-component-inventory.md",
+        "docs/research/siso-r1-tui-rebuild-lessons.md",
+        "docs/research/siso-tui-workbench.md"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "renderers-smoke",
+      "name": "Renderer Smoke Coverage",
+      "status": "validated",
+      "category": "quality",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Smoke coverage for renderer compatibility/polish across SISO surfaces.",
+      "implementedIn": [
+        "scripts/smoke-pi-native-renderers.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:renderers"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "syntax-smoke",
+      "name": "Syntax Smoke Coverage",
+      "status": "validated",
+      "category": "quality",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Basic syntax/module parse smoke for the agent base.",
+      "implementedIn": [
+        "package.json",
+        "install.sh",
+        "scripts/install-local.sh",
+        "bin/siso",
+        "bin/siso-update",
+        "bin/siso-doctor",
+        "bin/siso-where"
+      ],
+      "validatedBy": [
+        "npm run smoke:syntax"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "tailscale-admin-docs",
+      "name": "Tailscale/Admin Documentation",
+      "status": "implemented",
+      "category": "docs",
+      "priority": "low",
+      "exists": true,
+      "summary": "Admin onboarding, Tailscale setup, and troubleshooting documentation for operating SISO Agent Base.",
+      "implementedIn": [
+        "docs/admin-onboarding.md",
+        "docs/tailscale-setup.md",
+        "docs/troubleshooting.md"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "lesson-log",
+      "name": "Lesson Log",
+      "status": "implemented",
+      "category": "docs",
+      "priority": "low",
+      "exists": true,
+      "summary": "Task lessons and operating notes captured for future agent behavior.",
+      "implementedIn": [
+        "tasks/lessons.md"
+      ],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "source-drift-detector",
+      "name": "Source Drift Detector",
+      "status": "validated",
+      "category": "doctor",
+      "priority": "high",
+      "exists": true,
+      "summary": "Detects version, release, smoke script, capability/test/contract, and installed runtime drift with a JSON report.",
+      "implementedIn": [
+        "scripts/smoke-source-drift.mjs",
+        "test-space/scenarios/source-drift.md",
+        "test-space/results/source-drift-report.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:source-drift"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "agent-contracts",
+      "name": "Agent Contracts",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Draft agent contract registry and research model for subsystem rules, required validations, risk levels, and evidence before agents claim work complete.",
+      "implementedIn": [
+        "docs/contracts/README.md",
+        "docs/contracts/contracts.json",
+        "docs/research/agent-contracts-research.md",
+        "scripts/smoke-contracts.mjs",
+        "docs/contracts/agent-final-check.md",
+        "test-space/results/contracts-report.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:contracts"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "flight-recorder",
+      "name": "Agent Flight Recorder",
+      "status": "validated",
+      "category": "observability",
+      "priority": "medium",
+      "exists": true,
+      "summary": "Flight recorder schema plus readiness, context-filter, and code-intelligence recorders with analysis for validation rates, event counts, risks, and improvement recommendations.",
+      "implementedIn": [
+        "docs/research/flight-recorder.md",
+        "docs/flight-recorder/schema.json",
+        "examples/flight-recorder/source-drift-run.json",
+        "scripts/smoke-flight-recorder.mjs",
+        "test-space/scenarios/flight-recorder.md",
+        "test-space/results/flight-recorder-summary.json",
+        "scripts/record-doctor-readiness-flight.mjs",
+        "test-space/results/flight-runs/doctor-readiness-latest.json",
+        "scripts/analyze-flight-recorder.mjs",
+        "test-space/results/flight-analysis.json",
+        "test-space/results/flight-analysis.md",
+        "test-space/results/flight-runs/index.json",
+        "scripts/record-context-filter-flight.mjs",
+        "scripts/record-code-intel-flight.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:flight-recorder",
+        "npm run record:doctor-readiness-flight",
+        "npm run analyze:flight-recorder",
+        "npm run record:context-filter-flight",
+        "npm run record:code-intel-flight"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "live-event-driven-tui",
+      "name": "Live Event-Driven TUI",
+      "status": "idea",
+      "category": "tui",
+      "priority": "high",
+      "exists": false,
+      "summary": "Connect the TUI to live structured agent/tool/file/status events instead of static demo fixtures.",
+      "implementedIn": [],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "capability-cli",
+      "name": "Capability CLI",
+      "status": "idea",
+      "category": "agent-system",
+      "priority": "medium",
+      "exists": false,
+      "summary": "Add siso capability list/search/show/audit/changelog commands backed by docs/capabilities/registry.json.",
+      "implementedIn": [],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "autopilot-smoke-fix-loop",
+      "name": "Autopilot Smoke Fix Loop",
+      "status": "idea",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": false,
+      "summary": "Bounded autopilot mode for repetitive inspect/edit/test loops: run a scoped check, summarize failures, apply or delegate narrow fixes, rerun validation, and return compact progress/results without flooding the parent chat.",
+      "implementedIn": [],
+      "validatedBy": [],
+      "releasedIn": null,
+      "changelogCandidate": false
+    },
+    {
+      "id": "autopilot-verifier-plan",
+      "name": "Autopilot Verifier Plan",
+      "status": "validated",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "No-edit controller/worker/read-only-verifier planning slice for post-implementation spec checks, checkpoints, required validations, failure signatures, and compact feedback packets.",
+      "implementedIn": [
+        "docs/strategy/autopilot-verifier-loop.md",
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-autopilot-plan.mjs",
+        "scripts/smoke-autopilot-verifier-plan.mjs",
+        "docs/tools/scenario-cards.json",
+        "benchmarks/harness/tool-selection-cases.json",
+        "test-space/scenarios/autopilot-verifier-plan.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:autopilot-plan",
+        "npm run smoke:autopilot-verifier",
+        "npm run smoke:tool-scenario-cards",
+        "npm run smoke:tool-selection-eval"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "agent-tooling-roadmap",
+      "name": "Agent Tooling Roadmap",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Roadmap plus implemented local deterministic code-intelligence primitives: repoSearch, readMany, projectTree/projectMap, fileOutline, symbolSearch, contextPack, briefRepo, runCheck, workspace/capability helpers.",
+      "implementedIn": [
+        "docs/capabilities/agent-tooling-roadmap.md",
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-agent-tooling.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ],
+      "releasedIn": "0.1.94",
+      "changelogCandidate": true
+    },
+    {
+      "id": "lazy-tool-discovery",
+      "name": "Lazy Tool Discovery and Loading",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Tiny always-on discovery layer for searching, inspecting, recommending, loading, and unloading large tool packs without injecting every tool schema into agent context.",
+      "implementedIn": [
+        "docs/capabilities/lazy-tool-discovery.md",
+        "docs/tools/packs.json",
+        "extensions/siso-context-manager/index.js",
+        "extensions/siso-context-manager/provider-filter.d.ts",
+        "extensions/siso-context-manager/provider-filter.js",
+        "scripts/smoke-tool-schema-lazy.mjs",
+        "templates/profile/SYSTEM.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:capabilities",
+        "npm run smoke:tool-packs",
+        "npm run smoke:tool-schema-lazy",
+        "npm run smoke:tool-selection-eval"
+      ],
+      "releasedIn": "0.1.105",
+      "changelogCandidate": true
+    },
+    {
+      "id": "harness-benchmark-scorecard",
+      "name": "Harness Benchmark and Scorecard",
+      "status": "validated",
+      "category": "benchmark",
+      "priority": "high",
+      "exists": true,
+      "summary": "Benchmark/scorecard scaffolding for measuring SISO harness quality across task achievement, tool/context efficiency, code intelligence, delegation, skills, safety, memory, and operator experience.",
+      "implementedIn": [
+        "docs/strategy/agent-harness-10x-roadmap.md",
+        "benchmarks/harness/README.md",
+        "benchmarks/harness/benchmark-plan.json",
+        "benchmarks/harness/scorecard.schema.json",
+        "benchmarks/harness/tasks/",
+        "scripts/smoke-harness-benchmark.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:harness-benchmark"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "tool-scenario-cards",
+      "name": "Tool Scenario Cards",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Scenario-first metadata, runtime recommendation, adoption telemetry, and eval coverage that teaches agents when to use/avoid every major SISO agent-facing tool.",
+      "implementedIn": [
+        "benchmarks/harness/benchmark-plan.json",
+        "benchmarks/harness/tasks/tool-selection-correctness.md",
+        "benchmarks/harness/tool-selection-cases.json",
+        "docs/capabilities/tool-scenario-cards.md",
+        "docs/research/tool-scenario-cards.md",
+        "docs/tools/README.md",
+        "docs/tools/packs.json",
+        "docs/tools/scenario-cards.json",
+        "extensions/siso-agent-router/index.js",
+        "extensions/siso-agent-router/tooling-actions.js",
+        "scripts/smoke-agent-tooling.mjs",
+        "scripts/smoke-tool-packs.mjs",
+        "scripts/smoke-tool-scenario-cards.mjs",
+        "scripts/smoke-tool-schema-lazy.mjs",
+        "scripts/smoke-tool-selection-eval.mjs",
+        "templates/profile/SYSTEM.md",
+        "test-space/scenarios/tool-scenario-cards.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities",
+        "npm run smoke:harness-benchmark",
+        "npm run smoke:tool-packs",
+        "npm run smoke:tool-scenario-cards",
+        "npm run smoke:tool-schema-lazy",
+        "npm run smoke:tool-selection-eval"
+      ],
+      "releasedIn": "0.1.106",
+      "changelogCandidate": true
+    },
+    {
+      "id": "benchmark-research-inbox",
+      "name": "Benchmark Research Inbox",
+      "status": "validated",
+      "category": "benchmark",
+      "priority": "high",
+      "exists": true,
+      "summary": "Research inbox and normalized map for external agent benchmarks, GitHub/Sourcegraph learnings, and SISO-specific metric extraction.",
+      "implementedIn": [
+        "research/benchmarks/README.md",
+        "research/benchmarks/external-benchmark-map.json",
+        "research/benchmarks/research-questions.md",
+        "research/benchmarks/sources/local-existing-research.md",
+        "scripts/smoke-benchmark-research.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:benchmark-research"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "output-style-preflight",
+      "name": "Output Style and Preflight Message",
+      "status": "validated",
+      "category": "ux",
+      "priority": "high",
+      "exists": true,
+      "summary": "Adds SISO interaction style guidance plus a custom siso-preflight phase card renderer before tool-heavy agent work.",
+      "implementedIn": [
+        "extensions/siso-agent-router/output-style.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-output-style.mjs",
+        "docs/research/pi-output-ux-map.md",
+        "scripts/smoke-pi-output-map.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:output-style",
+        "npm run smoke:router-lean",
+        "npm run smoke:pi-output-map"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "native-output-polish",
+      "name": "Native PI Output Polish",
+      "status": "validated",
+      "category": "ux",
+      "priority": "high",
+      "exists": true,
+      "summary": "Patches native PI assistant/tool rendering to strip TXT/text wrappers from assistant messages and compact fallback tool output summaries.",
+      "implementedIn": [
+        "node_modules/@mariozechner/pi-coding-agent/dist/modes/interactive/components/assistant-message.js",
+        "node_modules/@mariozechner/pi-coding-agent/dist/modes/interactive/components/tool-execution.js",
+        "scripts/smoke-native-output-polish.mjs"
+      ],
+      "validatedBy": [
+        "npm run smoke:native-output-polish"
+      ],
+      "releasedIn": null,
+      "changelogCandidate": true
+    },
+    {
+      "id": "related-checks",
+      "name": "Related Checks",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Recommends primary, secondary, and full validation commands based on changed paths, capability ids, and task text.",
+      "implementedIn": [
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-related-checks.mjs",
+        "test-space/scenarios/related-checks.md",
+        "docs/tools/scenario-cards.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:related-checks",
+        "npm run smoke:tool-scenario-cards"
+      ],
+      "releasedIn": "0.1.107",
+      "changelogCandidate": true
+    },
+    {
+      "id": "gather-context",
+      "name": "Gather Context",
+      "status": "implemented",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Builds a task-aware context packet with tool recommendation, ranked repo map, search/read evidence, and related checks.",
+      "implementedIn": [
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-gather-context.mjs",
+        "test-space/scenarios/gather-context.md",
+        "docs/tools/scenario-cards.json"
+      ],
+      "validatedBy": [
+        "npm run smoke:gather-context",
+        "npm run smoke:tool-scenario-cards"
+      ],
+      "releasedIn": "0.1.107",
+      "changelogCandidate": true
+    },
+    {
+      "id": "repo-index",
+      "name": "Repo Index v1",
+      "status": "validated",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Sourcegraph-lite local repo index for files, symbols, imports, status, and query to reduce repeated filesystem search during agent coding tasks.",
+      "implementedIn": [
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-repo-index.mjs",
+        "test-space/scenarios/repo-index.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:repo-index",
+        "npm run smoke:agent-tooling"
+      ],
+      "releasedIn": "0.1.108",
+      "changelogCandidate": true
+    },
+    {
+      "id": "autopilot-fix-loop",
+      "name": "Autopilot Fix Loop",
+      "status": "validated",
+      "category": "agent-system",
+      "priority": "high",
+      "exists": true,
+      "summary": "Bounded repair controller that runs a validation command, blocks unsafe checks, summarizes failures, gathers context, and returns a patch-oriented repair packet without silently editing files.",
+      "implementedIn": [
+        "extensions/siso-agent-router/tooling-actions.js",
+        "extensions/siso-agent-router/index.js",
+        "scripts/smoke-autopilot-fix-loop.mjs",
+        "test-space/scenarios/autopilot-fix-loop.md"
+      ],
+      "validatedBy": [
+        "npm run smoke:autopilot-fix-loop"
+      ],
+      "releasedIn": "0.1.109",
+      "changelogCandidate": true
+    }
+  ]
+}

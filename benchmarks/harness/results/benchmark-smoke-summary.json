@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-05-10T08:14:27.953Z",
+  "suiteCount": 6,
+  "categories": [
+    "task-achievement",
+    "tool-efficiency",
+    "token-context-efficiency",
+    "code-intelligence",
+    "delegation",
+    "skill-usage",
+    "safety-governance",
+    "memory-improveability",
+    "operator-experience"
+  ],
+  "externalResearchTargets": [
+    "SWE-bench",
+    "SWE-bench Verified",
+    "Terminal-Bench",
+    "AgentBench",
+    "ToolBench/APIBench",
+    "WebArena/WorkArena",
+    "tau-bench",
+    "BrowseComp",
+    "OpenHands/OpenCode/Continue/Cursor/Windsurf/Sourcegraph public agent docs"
+  ]
+}

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "runId": "doctor-readiness-latest",
+  "task": "Record doctor readiness checks as a flight-recorder trace.",
+  "startedAt": "2026-05-09T17:19:16.621Z",
+  "completedAt": "2026-05-09T17:19:17.937Z",
+  "agent": {
+    "profile": "local-doctor",
+    "model": "none"
+  },
+  "links": {
+    "capabilityIds": [
+      "flight-recorder",
+      "doctor-readiness",
+      "source-drift-detector",
+      "agent-contracts",
+      "capability-registry",
+      "test-space"
+    ],
+    "contractIds": [
+      "install-runtime",
+      "capability-registry",
+      "test-space"
+    ],
+    "benchmarkSuiteIds": [
+      "foundation-readiness"
+    ],
+    "testSpaceSuites": [
+      "flight-recorder",
+      "doctor-readiness",
+      "source-drift",
+      "agent-contracts",
+      "test-space-structure"
+    ]
+  },
+  "events": [
+    {
+      "at": "2026-05-09T17:19:16.621Z",
+      "type": "run.started",
+      "summary": "Doctor readiness flight recording started."
+    },
+    {
+      "at": "2026-05-09T17:19:16.622Z",
+      "type": "contract.matched",
+      "contractId": "install-runtime",
+      "requiredCommands": [
+        "npm run smoke:source-drift",
+        "npm run smoke:doctor-readiness"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:19:16.622Z",
+      "type": "contract.matched",
+      "contractId": "capability-registry",
+      "requiredCommands": [
+        "npm run smoke:capabilities",
+        "npm run smoke:contracts"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:19:16.622Z",
+      "type": "contract.matched",
+      "contractId": "test-space",
+      "requiredCommands": [
+        "npm run smoke:test-space",
+        "npm run smoke:test-space-coverage"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:19:16.623Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:source-drift"
+    },
+    {
+      "at": "2026-05-09T17:19:16.916Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 293,
+      "summary": "npm run smoke:source-drift"
+    },
+    {
+      "at": "2026-05-09T17:19:16.916Z",
+      "type": "command.validation",
+      "command": "npm run smoke:source-drift",
+      "status": "passed",
+      "durationMs": 293
+    },
+    {
+      "at": "2026-05-09T17:19:16.917Z",
+      "type": "file.read",
+      "path": "test-space/results/source-drift-report.json",
+      "summary": "read source drift report for flight risks"
+    },
+    {
+      "at": "2026-05-09T17:19:16.918Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "node scripts/smoke-contracts.mjs --changed"
+    },
+    {
+      "at": "2026-05-09T17:19:17.420Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 502,
+      "summary": "node scripts/smoke-contracts.mjs --changed"
+    },
+    {
+      "at": "2026-05-09T17:19:17.420Z",
+      "type": "command.validation",
+      "command": "node scripts/smoke-contracts.mjs --changed",
+      "status": "passed",
+      "durationMs": 502
+    },
+    {
+      "at": "2026-05-09T17:19:17.420Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:capabilities"
+    },
+    {
+      "at": "2026-05-09T17:19:17.636Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 216,
+      "summary": "npm run smoke:capabilities"
+    },
+    {
+      "at": "2026-05-09T17:19:17.636Z",
+      "type": "command.validation",
+      "command": "npm run smoke:capabilities",
+      "status": "passed",
+      "durationMs": 216
+    },
+    {
+      "at": "2026-05-09T17:19:17.636Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:test-space"
+    },
+    {
+      "at": "2026-05-09T17:19:17.778Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 141,
+      "summary": "npm run smoke:test-space"
+    },
+    {
+      "at": "2026-05-09T17:19:17.778Z",
+      "type": "command.validation",
+      "command": "npm run smoke:test-space",
+      "status": "passed",
+      "durationMs": 141
+    },
+    {
+      "at": "2026-05-09T17:19:17.778Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:test-space-coverage"
+    },
+    {
+      "at": "2026-05-09T17:19:17.937Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 159,
+      "summary": "npm run smoke:test-space-coverage"
+    },
+    {
+      "at": "2026-05-09T17:19:17.937Z",
+      "type": "command.validation",
+      "command": "npm run smoke:test-space-coverage",
+      "status": "passed",
+      "durationMs": 159
+    },
+    {
+      "at": "2026-05-09T17:19:17.939Z",
+      "type": "file.changed",
+      "path": "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-19-16-621Z.json",
+      "changeKind": "generated"
+    },
+    {
+      "at": "2026-05-09T17:19:17.939Z",
+      "type": "file.changed",
+      "path": "test-space/results/flight-runs/doctor-readiness-latest.json",
+      "changeKind": "generated"
+    },
+    {
+      "at": "2026-05-09T17:19:17.939Z",
+      "type": "file.changed",
+      "path": "test-space/results/flight-runs/index.json",
+      "changeKind": "generated"
+    },
+    {
+      "type": "scorecard.updated",
+      "at": "2026-05-09T17:19:17.939Z",
+      "summary": "Computed readiness flight scorecard from validation events."
+    },
+    {
+      "type": "run.completed",
+      "at": "2026-05-09T17:19:17.937Z",
+      "status": "completed"
+    }
+  ],
+  "metrics": {
+    "toolCalls": 5,
+    "failedToolCalls": 0,
+    "filesRead": 0,
+    "filesChanged": 1,
+    "validationsRun": 5,
+    "validationsPassed": 5,
+    "childAgents": 0,
+    "contextFilteredEvents": 0,
+    "durationMs": 1316
+  },
+  "scorecard": {
+    "taskAchievement": 90,
+    "toolEfficiency": 85,
+    "contextEfficiency": 80,
+    "codeIntelligence": 50,
+    "delegation": 100,
+    "skillUsage": 50,
+    "safetyGovernance": 90,
+    "memoryImproveability": 75,
+    "operatorExperience": 85,
+    "overall": 78
+  },
+  "artifacts": [
+    "test-space/results/source-drift-report.json",
+    "test-space/results/contracts-report.json",
+    "test-space/results/coverage-summary.json"
+  ],
+  "risks": [],
+  "sourceRunId": "doctor-readiness-2026-05-09T17-19-16-621Z"
+}

@@ -1,0 +1,479 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "summary": {
+    "purpose": "Capability/test coverage map for SISO Test Space.",
+    "counts": {
+      "blocked": 1,
+      "covered": 21,
+      "external": 28,
+      "idea-only": 5,
+      "manual": 13
+    }
+  },
+  "knownExternalTestLocations": [
+    "scripts/smoke-*.mjs",
+    "package.json scripts.smoke:*",
+    "artifacts/tui-demo/",
+    "docs/superpowers/plans/",
+    "docs/decisions/",
+    "tasks/lessons.md",
+    ".pi/session-context/"
+  ],
+  "capabilities": [
+    {
+      "capabilityId": "capability-registry",
+      "coverage": "covered",
+      "suites": [
+        "capability-registry"
+      ]
+    },
+    {
+      "capabilityId": "test-space",
+      "coverage": "covered",
+      "suites": [
+        "test-space-structure"
+      ]
+    },
+    {
+      "capabilityId": "capability-audit-smoke",
+      "coverage": "idea-only",
+      "reason": "Capability is proposed but not implemented yet.",
+      "suites": []
+    },
+    {
+      "capabilityId": "siso-wrapper-launcher",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "install-update-repair",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "siso-doctor",
+      "coverage": "covered",
+      "suites": [
+        "doctor-and-launcher"
+      ]
+    },
+    {
+      "capabilityId": "release-metadata-smoke",
+      "coverage": "covered",
+      "suites": [
+        "release-metadata"
+      ]
+    },
+    {
+      "capabilityId": "changelog-candidate-collector",
+      "coverage": "manual",
+      "reason": "Manual release-agent review until automated changelog extraction exists.",
+      "suites": []
+    },
+    {
+      "capabilityId": "smoke-all-suite",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "route-policy",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "permission-aware-routing",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "profile-registry",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "role-prompt-contracts",
+      "coverage": "manual",
+      "reason": "Needs prompt snapshot assertions; currently manually reviewed.",
+      "suites": []
+    },
+    {
+      "capabilityId": "bifrost-routing",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "router-lean",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "child-agent-spawn",
+      "coverage": "blocked",
+      "reason": "Live subagents are known broken in this session.",
+      "suites": [
+        "subagent-surfaces"
+      ]
+    },
+    {
+      "capabilityId": "session-scoped-agent-runtime",
+      "coverage": "covered",
+      "suites": [
+        "session-scoped-agent-runtime"
+      ]
+    },
+    {
+      "capabilityId": "native-subagent-bridge",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "child-agent-notifications",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "child-run-control",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "spawn-result-normalization",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "runtime-guardrails",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "fleet-queue-control",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "agents-command",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "handoff-packets",
+      "coverage": "manual",
+      "reason": "Needs scenario assertions for handoff content.",
+      "suites": []
+    },
+    {
+      "capabilityId": "worker-guard",
+      "coverage": "manual",
+      "reason": "Needs dedicated unit smoke; currently indirectly covered by subagent lifecycle.",
+      "suites": []
+    },
+    {
+      "capabilityId": "council-orchestration",
+      "coverage": "manual",
+      "reason": "Needs live multi-agent/council path once subagents are healthy.",
+      "suites": []
+    },
+    {
+      "capabilityId": "workflow-orchestration",
+      "coverage": "manual",
+      "reason": "Needs live workflow workers once subagents are healthy.",
+      "suites": []
+    },
+    {
+      "capabilityId": "durable-task-store",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "task-scope-management",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "global-task-registry",
+      "coverage": "manual",
+      "reason": "Needs dedicated smoke for ~/.siso task registry; currently covered indirectly.",
+      "suites": []
+    },
+    {
+      "capabilityId": "context-filtering",
+      "coverage": "covered",
+      "suites": [
+        "context-tools"
+      ]
+    },
+    {
+      "capabilityId": "context-memory-tools",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "skill-loading",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "repo-candidate-catalog",
+      "coverage": "manual",
+      "reason": "No dedicated smoke yet; currently manually exercised via siso repo.",
+      "suites": []
+    },
+    {
+      "capabilityId": "research-integration-queue",
+      "coverage": "manual",
+      "reason": "No dedicated smoke yet; currently manually exercised via siso repo recommendations.",
+      "suites": []
+    },
+    {
+      "capabilityId": "codex-case-packets",
+      "coverage": "manual",
+      "reason": "No dedicated smoke yet; manually covered by research flows.",
+      "suites": []
+    },
+    {
+      "capabilityId": "structured-event-stream",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "status-widget",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "status-lean",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "bifrost-dashboard",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "tui-demo-workbench",
+      "coverage": "covered",
+      "suites": [
+        "tui-workbench"
+      ]
+    },
+    {
+      "capabilityId": "tui-gallery",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "tui-theme-components",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "tui-workbench-docs",
+      "coverage": "manual",
+      "reason": "Documentation review, not executable.",
+      "suites": []
+    },
+    {
+      "capabilityId": "renderers-smoke",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "syntax-smoke",
+      "coverage": "external",
+      "reason": "Covered by package smoke/implementation path but not yet first-class in test-plan.json.",
+      "suites": []
+    },
+    {
+      "capabilityId": "tailscale-admin-docs",
+      "coverage": "manual",
+      "reason": "Documentation review, not executable.",
+      "suites": []
+    },
+    {
+      "capabilityId": "lesson-log",
+      "coverage": "manual",
+      "reason": "Documentation review, not executable.",
+      "suites": []
+    },
+    {
+      "capabilityId": "source-drift-detector",
+      "coverage": "covered",
+      "suites": [
+        "source-drift"
+      ]
+    },
+    {
+      "capabilityId": "agent-contracts",
+      "coverage": "covered",
+      "suites": [
+        "contract-diff-report"
+      ]
+    },
+    {
+      "capabilityId": "flight-recorder",
+      "coverage": "covered",
+      "suites": [
+        "flight-recorder"
+      ]
+    },
+    {
+      "capabilityId": "live-event-driven-tui",
+      "coverage": "idea-only",
+      "reason": "Capability is proposed but not implemented yet.",
+      "suites": []
+    },
+    {
+      "capabilityId": "capability-cli",
+      "coverage": "idea-only",
+      "reason": "Capability is proposed but not implemented yet.",
+      "suites": []
+    },
+    {
+      "capabilityId": "autopilot-smoke-fix-loop",
+      "coverage": "idea-only",
+      "reason": "Capability is proposed but not implemented yet.",
+      "suites": []
+    },
+    {
+      "capabilityId": "agent-tooling-roadmap",
+      "coverage": "external",
+      "suites": [
+        "agent-tooling"
+      ],
+      "reason": "Roadmap plus smoke-backed tooling primitives; benchmark coverage is in harness benchmark suite."
+    },
+    {
+      "capabilityId": "lazy-tool-discovery",
+      "coverage": "idea-only",
+      "reason": "Capability is planned/proposed but not first-class implemented yet.",
+      "suites": []
+    },
+    {
+      "capabilityId": "doctor-readiness",
+      "coverage": "covered",
+      "suites": [
+        "doctor-readiness"
+      ]
+    },
+    {
+      "capabilityId": "harness-benchmark-scorecard",
+      "coverage": "covered",
+      "suites": [
+        "harness-benchmark"
+      ]
+    },
+    {
+      "capabilityId": "benchmark-research-inbox",
+      "coverage": "covered",
+      "suites": [
+        "benchmark-research"
+      ]
+    },
+    {
+      "capabilityId": "tool-scenario-cards",
+      "coverage": "covered",
+      "suites": [
+        "tool-scenario-cards"
+      ],
+      "reason": "Covered by scripts/smoke-tool-scenario-cards.mjs and linked benchmark suite tool-selection-correctness."
+    },
+    {
+      "capabilityId": "autopilot-verifier-plan",
+      "coverage": "covered",
+      "suites": [
+        "autopilot-verifier-plan"
+      ],
+      "reason": "Covered by design-contract smoke, runtime plan smoke, and tool-selection eval case."
+    },
+    {
+      "capabilityId": "output-style-preflight",
+      "coverage": "covered",
+      "suites": [
+        "output-style-preflight"
+      ]
+    },
+    {
+      "capabilityId": "native-output-polish",
+      "coverage": "covered",
+      "suites": [
+        "native-output-polish"
+      ]
+    },
+    {
+      "capabilityId": "related-checks",
+      "coverage": "covered",
+      "suites": [
+        "related-checks"
+      ],
+      "reason": "Covered by scripts/smoke-related-checks.mjs."
+    },
+    {
+      "capabilityId": "gather-context",
+      "coverage": "covered",
+      "suites": [
+        "gather-context"
+      ],
+      "reason": "Covered by scripts/smoke-gather-context.mjs."
+    },
+    {
+      "capabilityId": "repo-index",
+      "coverage": "covered",
+      "suites": [
+        "repo-index"
+      ]
+    },
+    {
+      "capabilityId": "autopilot-fix-loop",
+      "coverage": "covered",
+      "suites": [
+        "autopilot-fix-loop"
+      ]
+    }
+  ],
+  "nextCoverageTargets": [
+    "siso-wrapper-launcher",
+    "install-update-repair",
+    "changelog-candidate-collector",
+    "smoke-all-suite",
+    "route-policy",
+    "permission-aware-routing",
+    "profile-registry",
+    "role-prompt-contracts",
+    "bifrost-routing",
+    "router-lean",
+    "native-subagent-bridge",
+    "child-agent-notifications",
+    "child-run-control",
+    "spawn-result-normalization",
+    "runtime-guardrails"
+  ]
+}

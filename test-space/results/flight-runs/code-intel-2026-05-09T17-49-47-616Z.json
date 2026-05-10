@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "runId": "code-intel-2026-05-09T17-49-47-616Z",
+  "task": "Record code-intelligence/tooling primitives as flight-recorder evidence.",
+  "startedAt": "2026-05-09T17:49:47.616Z",
+  "completedAt": "2026-05-09T17:49:47.928Z",
+  "agent": {
+    "profile": "local-code-intel",
+    "model": "none"
+  },
+  "links": {
+    "capabilityIds": [
+      "flight-recorder",
+      "agent-tooling-roadmap",
+      "harness-benchmark-scorecard"
+    ],
+    "contractIds": [
+      "capability-registry"
+    ],
+    "benchmarkSuiteIds": [
+      "code-intel-navigation"
+    ],
+    "testSpaceSuites": [
+      "flight-recorder",
+      "harness-benchmark"
+    ]
+  },
+  "events": [
+    {
+      "at": "2026-05-09T17:49:47.616Z",
+      "type": "run.started",
+      "summary": "Code intelligence flight recording started."
+    },
+    {
+      "at": "2026-05-09T17:49:47.618Z",
+      "type": "contract.matched",
+      "contractId": "capability-registry",
+      "requiredCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:49:47.618Z",
+      "type": "tool.started",
+      "tool": "repoSearch",
+      "summary": "repoSearch(cwd,query,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "tool.completed",
+      "tool": "repoSearch",
+      "exitCode": 0,
+      "durationMs": 79,
+      "summary": "action=repo-search results=8"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/changelog-candidates.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/changelog-candidates.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/changelog-candidates.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/changelog-candidates.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/current.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/ideas.md",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/registry.json",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "file.read",
+      "path": "docs/capabilities/registry.json",
+      "summary": "repoSearch result preview"
+    },
+    {
+      "at": "2026-05-09T17:49:47.698Z",
+      "type": "tool.started",
+      "tool": "projectTree",
+      "summary": "projectTree(cwd,depth,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.704Z",
+      "type": "tool.completed",
+      "tool": "projectTree",
+      "exitCode": 0,
+      "durationMs": 6,
+      "summary": "action=project-tree"
+    },
+    {
+      "at": "2026-05-09T17:49:47.704Z",
+      "type": "tool.started",
+      "tool": "projectMap",
+      "summary": "projectMap(cwd,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.705Z",
+      "type": "tool.completed",
+      "tool": "projectMap",
+      "exitCode": 0,
+      "durationMs": 1,
+      "summary": "action=project-map"
+    },
+    {
+      "at": "2026-05-09T17:49:47.705Z",
+      "type": "tool.started",
+      "tool": "fileOutline",
+      "summary": "fileOutline(cwd,path,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.708Z",
+      "type": "tool.completed",
+      "tool": "fileOutline",
+      "exitCode": 0,
+      "durationMs": 3,
+      "summary": "action=file-outline"
+    },
+    {
+      "at": "2026-05-09T17:49:47.708Z",
+      "type": "file.read",
+      "path": "extensions/siso-agent-router/tooling-actions.js",
+      "summary": "fileOutline target"
+    },
+    {
+      "at": "2026-05-09T17:49:47.708Z",
+      "type": "tool.started",
+      "tool": "symbolSearch",
+      "summary": "symbolSearch(cwd,query,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.845Z",
+      "type": "tool.completed",
+      "tool": "symbolSearch",
+      "exitCode": 0,
+      "durationMs": 137,
+      "summary": "action=repo-search results=1"
+    },
+    {
+      "at": "2026-05-09T17:49:47.845Z",
+      "type": "tool.started",
+      "tool": "contextPack",
+      "summary": "contextPack(cwd,query,files,limit)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.917Z",
+      "type": "tool.completed",
+      "tool": "contextPack",
+      "exitCode": 0,
+      "durationMs": 72,
+      "summary": "action=context-pack"
+    },
+    {
+      "at": "2026-05-09T17:49:47.917Z",
+      "type": "file.read",
+      "path": "docs/research/flight-recorder.md",
+      "summary": "contextPack file"
+    },
+    {
+      "at": "2026-05-09T17:49:47.917Z",
+      "type": "file.read",
+      "path": "extensions/siso-agent-router/tooling-actions.js",
+      "summary": "contextPack file"
+    },
+    {
+      "at": "2026-05-09T17:49:47.917Z",
+      "type": "tool.started",
+      "tool": "briefRepo",
+      "summary": "briefRepo(cwd,task,query,depth)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.921Z",
+      "type": "tool.completed",
+      "tool": "briefRepo",
+      "exitCode": 0,
+      "durationMs": 4,
+      "summary": "action=brief-repo"
+    },
+    {
+      "at": "2026-05-09T17:49:47.921Z",
+      "type": "tool.started",
+      "tool": "toolRecommend",
+      "summary": "toolRecommend(cwd,task,stage)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.927Z",
+      "type": "tool.completed",
+      "tool": "toolRecommend",
+      "exitCode": 0,
+      "durationMs": 6,
+      "summary": "action=tool-recommend"
+    },
+    {
+      "at": "2026-05-09T17:49:47.927Z",
+      "type": "tool.started",
+      "tool": "runCheck",
+      "summary": "runCheck(cwd,commands)"
+    },
+    {
+      "at": "2026-05-09T17:49:47.927Z",
+      "type": "tool.completed",
+      "tool": "runCheck",
+      "exitCode": 1,
+      "durationMs": 0,
+      "summary": "command is required"
+    },
+    {
+      "at": "2026-05-09T17:49:47.928Z",
+      "type": "command.validation",
+      "command": "npm run smoke:agent-tooling",
+      "status": "passed",
+      "durationMs": 0
+    },
+    {
+      "type": "scorecard.updated",
+      "at": "2026-05-09T17:49:47.928Z",
+      "summary": "Native code-intel tools=9, filesRead=6, searchResults=8, symbols=1, contextFiles=0."
+    },
+    {
+      "type": "run.completed",
+      "at": "2026-05-09T17:49:47.928Z",
+      "status": "failed"
+    }
+  ],
+  "metrics": {
+    "toolCalls": 9,
+    "failedToolCalls": 1,
+    "filesRead": 6,
+    "filesChanged": 1,
+    "validationsRun": 1,
+    "validationsPassed": 1,
+    "childAgents": 0,
+    "contextFilteredEvents": 0,
+    "durationMs": 312
+  },
+  "codeIntelligenceMetrics": {
+    "nativeToolCount": 9,
+    "shellFallbackCount": 0,
+    "searchResults": 8,
+    "symbolsFound": 1,
+    "contextFiles": 0,
+    "briefGenerated": true,
+    "toolRecommendations": 5
+  },
+  "scorecard": {
+    "taskAchievement": 40,
+    "toolEfficiency": 65,
+    "contextEfficiency": 65,
+    "codeIntelligence": 55,
+    "delegation": 100,
+    "skillUsage": 50,
+    "safetyGovernance": 86,
+    "memoryImproveability": 80,
+    "operatorExperience": 82,
+    "overall": 65
+  },
+  "artifacts": [],
+  "risks": [
+    {
+      "id": "runCheck-failed",
+      "severity": "error",
+      "summary": "command is required"
+    }
+  ]
+}

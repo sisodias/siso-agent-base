@@ -1,16 +1,18 @@
 import { spawn as spawnProcess, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { chooseRoute } from "./route-policy.js";
+import { getProfile } from "./profile-registry.js";
 import { formatContextPacket, loadContextPacket } from "./context-loader.js";
 import { loadCodexCasePacket } from "./codex-case-packet.js";
 import { rolePrompt } from "./agent-prompts.js";
 import { createAgentEvent } from "./agent-events.js";
+import { attachTaskScope, currentTaskScope, isActiveTaskRecord, isRecordVisibleToScope, listScopedTaskRecords, sanitizeChildBudget as sanitizeTaskChildBudget, writeScopedTaskRecord } from "./task-registry.js";
+import { projectSessionRouterStatus, writeSessionAgent } from "./session-store.js";
 const PI_BUILTIN_TOOLS = new Set(["read", "bash", "edit", "write", "find", "ls"]);
 const PI_MUTATING_TOOLS = new Set(["edit", "write"]);
 const DEFAULT_PROVIDER = "bifrost-anthropic";
-const DEFAULT_TIMEOUT_MS = 60_000;
 const OUTPUT_LIMIT = 24_000;
 const CHILD_OUTPUT_LIMIT = 1_600;
 const CHILD_ERROR_LIMIT = 4_000;
@@ -18,6 +20,10 @@ const KILL_GRACE_MS = 3_000;
 const FORCE_FINISH_MS = 8_000;
 const CHILD_RUN_DIR = join(homedir(), ".siso", "agent", "child-runs");
 const SYSTEMDB_PATH = join(homedir(), "SISO_Workspace", ".SystemDB", "sisosystem.db");
+const CLEANUP_MAX_AGE_HOURS_MIN = 1;
+const CLEANUP_MAX_AGE_HOURS_MAX = 24 * 30;
+const CLEANUP_MAX_RUNS_MIN = 1;
+const CLEANUP_MAX_RUNS_MAX = 500;
 const BACKGROUND_SUPERVISOR_SCRIPT = `
 const { spawn } = require("node:child_process");
 const { closeSync, mkdirSync, openSync, writeFileSync } = require("node:fs");
@@ -100,13 +106,66 @@ function depthBlocked(options) {
         ? `Nested SISO spawn blocked at depth=${depth} max_depth=${maxDepth}. Parent agent must coordinate child work.`
         : undefined;
 }
-function parentSessionId() {
-    return process.env.CLAUDE_SESSION_ID ?? process.env.SISO_PARENT_SESSION_ID ?? process.env.PI_SESSION_ID ?? process.env.SISO_SESSION_ID ?? "unknown";
+function numericLimit(value) {
+    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+export function sanitizeChildBudget(budget = {}) {
+    return sanitizeTaskChildBudget(budget);
+}
+export function checkFleetSpawnPolicy(options = {}) {
+    const fleetId = options.fleetId;
+    if (!fleetId)
+        return undefined;
+    const budget = sanitizeTaskChildBudget(options.budget) ?? {};
+    const maxParallel = numericLimit(options.maxParallel) ?? numericLimit(budget.maxParallel);
+    const maxChildren = numericLimit(options.maxChildren) ?? numericLimit(budget.maxChildren);
+    const scope = currentTaskScope(options.ctx);
+    const fleetRecords = listScopedTaskRecords(scope, { limit: 1000 }).filter((record) => record.fleetId === fleetId);
+    if (maxChildren && fleetRecords.length >= maxChildren) {
+        return {
+            kind: "max_children",
+            reason: `Fleet ${fleetId} spawn blocked: max_children ${fleetRecords.length}/${maxChildren}`,
+        };
+    }
+    const active = fleetRecords.filter(isActiveTaskRecord);
+    if (maxParallel && active.length >= maxParallel) {
+        return {
+            kind: "max_parallel",
+            reason: `Fleet ${fleetId} spawn blocked: max_parallel ${active.length}/${maxParallel}`,
+        };
+    }
+    return undefined;
+}
+function queuedSpawnOptions(task, options = {}) {
+    return {
+        task,
+        ...(options.cwd ? { cwd: options.cwd } : {}),
+        ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+        ...(options.background !== undefined ? { background: options.background } : { background: true }),
+        ...(options.maxDepth !== undefined ? { maxDepth: options.maxDepth } : {}),
+        ...(options.noTools !== undefined ? { noTools: options.noTools } : {}),
+        ...(options.fleetId !== undefined ? { fleetId: options.fleetId } : {}),
+        ...(options.budget !== undefined ? { budget: options.budget } : {}),
+        ...(options.maxParallel !== undefined ? { maxParallel: options.maxParallel } : {}),
+        ...(options.maxChildren !== undefined ? { maxChildren: options.maxChildren } : {}),
+        ...(options.allocationMetadata !== undefined ? { allocationMetadata: options.allocationMetadata } : {}),
+    };
+}
+function normalizeSpawnOptions(task, options = {}) {
+    const budget = sanitizeTaskChildBudget(options.budget);
+    if (!budget)
+        return { ...options, budget: undefined };
+    return {
+        ...options,
+        budget,
+    };
 }
 function childRunDir() {
     return process.env.SISO_CHILD_RUN_DIR ?? CHILD_RUN_DIR;
 }
 function childRunPaths(id) {
+    if (!isSafeChildRunId(id))
+        throw new Error(`invalid child id: ${id}`);
     const dir = childRunDir();
     return {
         dir,
@@ -116,11 +175,53 @@ function childRunPaths(id) {
         exitPath: join(dir, `${id}.exit.json`),
     };
 }
+function isSafeChildRunId(id) {
+    return typeof id === "string" && /^siso-child-[A-Za-z0-9._-]+$/.test(id) && !id.includes("..") && !id.includes("/") && !id.includes("\\");
+}
+function expectedChildRunPaths(record) {
+    if (!record || !isSafeChildRunId(record.id))
+        return undefined;
+    return childRunPaths(record.id);
+}
+function pathUnderChildRunDir(path) {
+    if (typeof path !== "string" || !path)
+        return false;
+    const dir = resolve(childRunDir());
+    const target = resolve(path);
+    return target === dir || target.startsWith(`${dir}/`);
+}
+function clampNumber(value, fallback, min, max) {
+    const number = typeof value === "number" && Number.isFinite(value) ? value : fallback;
+    return Math.min(max, Math.max(min, number));
+}
+function sanitizeChildRunRecord(record) {
+    const paths = expectedChildRunPaths(record);
+    if (!paths)
+        return undefined;
+    return {
+        ...record,
+        stdoutPath: paths.stdoutPath,
+        stderrPath: paths.stderrPath,
+        exitPath: paths.exitPath,
+        runRecordPath: paths.runRecordPath,
+    };
+}
+function scopedChildRecord(record, scope = currentTaskScope()) {
+    if (!record)
+        return undefined;
+    return isRecordVisibleToScope(record, scope) ? record : undefined;
+}
 function writeChildRunRecord(record) {
-    mkdirSync(dirname(record.runRecordPath), { recursive: true });
-    const tempPath = `${record.runRecordPath}.${process.pid}.tmp`;
-    writeFileSync(tempPath, `${JSON.stringify(record, null, 2)}\n`);
-    renameSync(tempPath, record.runRecordPath);
+    const sanitized = sanitizeChildRunRecord(record);
+    if (!sanitized)
+        throw new Error(`invalid child id: ${record?.id}`);
+    const scoped = attachTaskScope(sanitized);
+    mkdirSync(dirname(scoped.runRecordPath), { recursive: true });
+    const tempPath = `${scoped.runRecordPath}.${process.pid}.tmp`;
+    writeFileSync(tempPath, `${JSON.stringify(scoped, null, 2)}\n`);
+    renameSync(tempPath, scoped.runRecordPath);
+    writeScopedTaskRecord(scoped);
+    writeSessionAgent(scoped);
 }
 function writeChildRunLogs(paths, stdout, stderr) {
     mkdirSync(paths.dir, { recursive: true });
@@ -153,7 +254,7 @@ function emitSystemDbTelemetry(event, payload) {
     if (!existsSync(dbPath))
         return;
     const fullPayload = {
-        source: "pi-harness-lab",
+        source: "siso-agent-base",
         event,
         ...payload,
     };
@@ -167,7 +268,7 @@ function emitSystemDbTelemetry(event, payload) {
       model_name, agent_id, agent_type, error
     )
     SELECT
-      'pi-harness-lab',
+      'siso-agent-base',
       ${sqlLiteral(sessionId)},
       ${sqlLiteral(event)},
       ${sqlLiteral(JSON.stringify(fullPayload))},
@@ -220,7 +321,36 @@ function parseChildOutput(text) {
         parseJsonEventLine(line, state);
     return state;
 }
-function recordFromResult(result, paths, startedAt = nowIso()) {
+function allocationMetadataFields(value = {}) {
+    const metadata = value && typeof value === "object" ? value : {};
+    return {
+        ...(metadata.kind ? { kind: metadata.kind } : {}),
+        ...(metadata.workflowMode ? { workflowMode: metadata.workflowMode } : {}),
+        ...(metadata.allocationId ? { allocationId: metadata.allocationId } : {}),
+        ...(metadata.assignmentId ? { assignmentId: metadata.assignmentId } : {}),
+        ...(metadata.parentTaskId ? { parentTaskId: metadata.parentTaskId } : {}),
+        ...(metadata.stepId ? { stepId: metadata.stepId } : {}),
+        ...(metadata.specialistId ? { specialistId: metadata.specialistId } : {}),
+        ...(metadata.specialistAlias ? { specialistAlias: metadata.specialistAlias } : {}),
+        ...(metadata.domain ? { domain: metadata.domain } : {}),
+        ...(Array.isArray(metadata.domains) ? { domains: metadata.domains } : {}),
+        ...(metadata.domainRatings ? { domainRatings: metadata.domainRatings } : {}),
+        ...(metadata.riskTier ? { riskTier: metadata.riskTier } : {}),
+        ...(metadata.ownershipBoundary ? { ownershipBoundary: metadata.ownershipBoundary } : {}),
+        ...(metadata.executionProfile ? { executionProfile: metadata.executionProfile } : {}),
+        ...(metadata.specialistScore !== undefined ? { specialistScore: metadata.specialistScore } : {}),
+        ...(Array.isArray(metadata.requiredChecks) ? { requiredChecks: metadata.requiredChecks } : {}),
+        ...(Array.isArray(metadata.acceptanceCriteria) ? { acceptanceCriteria: metadata.acceptanceCriteria } : {}),
+        ...(metadata.stageIndex !== undefined ? { stageIndex: metadata.stageIndex } : {}),
+        ...(metadata.workerIndex !== undefined ? { workerIndex: metadata.workerIndex } : {}),
+        ...(metadata.agent ? { agent: metadata.agent } : {}),
+        ...(metadata.verifierId ? { verifierId: metadata.verifierId } : {}),
+        ...(metadata.verifierVerdict ? { verifierVerdict: metadata.verifierVerdict } : {}),
+        ...(metadata.feedbackIteration !== undefined ? { feedbackIteration: metadata.feedbackIteration } : {}),
+        ...(metadata.verificationContract ? { verificationContract: metadata.verificationContract } : {}),
+    };
+}
+function recordFromResult(result, paths, startedAt = nowIso(), scope = currentTaskScope()) {
     return {
         id: result.id,
         status: result.status,
@@ -228,14 +358,19 @@ function recordFromResult(result, paths, startedAt = nowIso()) {
         profile: result.decision.profile,
         lane: result.decision.lane,
         model: result.decision.model,
+        task: result.task,
         cwd: result.cwd,
         pid: result.pid,
         exitCode: result.exitCode,
         signal: result.signal,
         startedAt,
         updatedAt: nowIso(),
-        ...(result.status !== "background" && result.status !== "running" && result.status !== "starting" ? { completedAt: nowIso() } : {}),
-        parentSessionId: parentSessionId(),
+        ...(result.status !== "background" && result.status !== "running" && result.status !== "starting" && result.status !== "queued" ? { completedAt: nowIso() } : {}),
+        rootSessionId: scope.rootSessionId,
+        parentSessionId: scope.parentSessionId,
+        ownerAgentId: scope.ownerAgentId,
+        ...(scope.spawnedByTaskId ? { spawnedByTaskId: scope.spawnedByTaskId } : {}),
+        depth: scope.depth,
         stdoutPath: paths.stdoutPath,
         stderrPath: paths.stderrPath,
         exitPath: paths.exitPath,
@@ -243,40 +378,54 @@ function recordFromResult(result, paths, startedAt = nowIso()) {
         tokens: result.tokens,
         toolCalls: result.toolCalls,
         compactResult: result.compactResult,
+        ...(result.fleetId ? { fleetId: result.fleetId } : {}),
+        ...(result.budget ? { budget: result.budget } : {}),
+        ...allocationMetadataFields(result.allocationMetadata),
+        ...(result.queuedAt ? { queuedAt: result.queuedAt } : {}),
+        ...(result.queuedReason ? { queuedReason: result.queuedReason } : {}),
+        ...(result.queuedSpawn ? { queuedSpawn: result.queuedSpawn } : {}),
         rawOutputChars: result.rawOutputChars,
         truncatedOutputChars: result.truncatedOutputChars,
         ...(result.error ? { error: result.error } : {}),
-        ...(result.status !== "background" && result.status !== "running" && result.status !== "starting" ? { notified: result.notified ?? false } : {}),
+        ...(result.status !== "background" && result.status !== "running" && result.status !== "starting" && result.status !== "queued" ? { notified: result.notified ?? false } : {}),
         ...(result.events ? { events: result.events } : {}),
     };
 }
 function markTerminalNotified(record) {
     if (!isTerminalChildStatus(record.status) || record.notified)
         return record;
-    const next = { ...record, notified: true, updatedAt: nowIso() };
+    const next = { ...record, notified: true };
     writeChildRunRecord(next);
     return next;
 }
 export function readChildRunRecord(id) {
+    if (!isSafeChildRunId(id))
+        return undefined;
     const path = childRunPaths(id).runRecordPath;
     try {
-        return JSON.parse(readFileSync(path, "utf8"));
+        const record = JSON.parse(readFileSync(path, "utf8"));
+        if (record?.id !== id)
+            return undefined;
+        return sanitizeChildRunRecord(record);
     }
     catch {
         return undefined;
     }
 }
-export function collectChildRunRecord(id) {
+export function collectChildRunRecord(id, scope = currentTaskScope()) {
     const current = readChildRunRecord(id);
     if (!current)
         return undefined;
+    if (!scopedChildRecord(current, scope))
+        return undefined;
     if (current.status !== "background")
         return isTerminalChildStatus(current.status) ? markTerminalNotified(current) : current;
-    const exitState = readExitState(current.exitPath);
+    const paths = childRunPaths(current.id);
+    const exitState = readExitState(paths.exitPath);
     if (!exitState && isPidAlive(current.pid))
         return current;
-    const parsed = parseChildOutput(readTextFile(current.stdoutPath));
-    const stderr = readTextFile(current.stderrPath);
+    const parsed = parseChildOutput(readTextFile(paths.stdoutPath));
+    const stderr = readTextFile(paths.stderrPath);
     const output = truncateForParent(parsed.finalOutput);
     const missingExitState = !exitState && !isPidAlive(current.pid);
     const hasCapturedChildResult = Boolean(parsed.finalOutput.trim()) || parsed.tokens.totalTokens > 0 || parsed.toolCalls > 0;
@@ -333,16 +482,16 @@ function readExitState(path) {
         return undefined;
     }
 }
-export function collectLatestChildRunRecords(limit = 5) {
+export function collectLatestChildRunRecords(limit = 5, scope = currentTaskScope()) {
     const dir = childRunDir();
     try {
         return readdirSync(dir)
             .filter((name) => name.endsWith(".json") && !name.endsWith(".exit.json"))
             .map((name) => join(dir, name))
             .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)
-            .slice(0, limit)
-            .map((path) => collectChildRunRecord(path.slice(path.lastIndexOf("/") + 1, -".json".length)))
-            .filter((record) => Boolean(record));
+            .map((path) => collectChildRunRecord(path.slice(path.lastIndexOf("/") + 1, -".json".length), scope))
+            .filter((record) => Boolean(record))
+            .slice(0, limit);
     }
     catch {
         return [];
@@ -377,32 +526,90 @@ function compactRecordLine(record) {
         `notified=${record.notified === true}`,
     ].join(" ");
 }
-export async function controlChildRun(input) {
+function compactChildResultForParent(result = {}) {
+    if (!result || typeof result !== "object")
+        return undefined;
+    const summary = typeof result.summary === "string" ? truncateField(result.summary, 900) : undefined;
+    const findings = Array.isArray(result.findings) ? result.findings.slice(0, 5).map((item) => truncateField(String(item), 300)) : [];
+    const files = Array.isArray(result.files) ? result.files.slice(0, 20).map((item) => truncateField(String(item), 240)) : [];
+    const nextAction = typeof result.next_action === "string" ? truncateField(result.next_action, 500) : undefined;
+    return {
+        summary: summary ?? "No compact summary captured.",
+        findings,
+        files,
+        next_action: nextAction ?? "none",
+    };
+}
+export function compactChildRunRecord(record) {
+    if (!record)
+        return record;
+    const events = Array.isArray(record.events) ? record.events : [];
+    return {
+        id: record.id,
+        status: record.status,
+        adapter: record.adapter,
+        profile: record.profile,
+        lane: record.lane,
+        model: record.model,
+        cwd: record.cwd,
+        ...(record.pid !== undefined ? { pid: record.pid } : {}),
+        ...(record.exitCode !== undefined ? { exitCode: record.exitCode } : {}),
+        ...(record.signal !== undefined ? { signal: record.signal } : {}),
+        startedAt: record.startedAt,
+        updatedAt: record.updatedAt,
+        ...(record.completedAt ? { completedAt: record.completedAt } : {}),
+        ...(record.stdoutPath ? { stdoutPath: record.stdoutPath } : {}),
+        ...(record.stderrPath ? { stderrPath: record.stderrPath } : {}),
+        ...(record.exitPath ? { exitPath: record.exitPath } : {}),
+        ...(record.runRecordPath ? { runRecordPath: record.runRecordPath } : {}),
+        ...(record.rootSessionId ? { rootSessionId: record.rootSessionId } : {}),
+        ...(record.parentSessionId ? { parentSessionId: record.parentSessionId } : {}),
+        ...(record.ownerAgentId ? { ownerAgentId: record.ownerAgentId } : {}),
+        ...(record.spawnedByTaskId ? { spawnedByTaskId: record.spawnedByTaskId } : {}),
+        ...(record.fleetId ? { fleetId: record.fleetId } : {}),
+        ...(record.depth !== undefined ? { depth: record.depth } : {}),
+        ...(record.queuedAt ? { queuedAt: record.queuedAt } : {}),
+        ...(record.queuedReason ? { queuedReason: truncateField(String(record.queuedReason), 500) } : {}),
+        tokens: record.tokens ?? { input: 0, output: 0, totalTokens: 0 },
+        toolCalls: record.toolCalls ?? 0,
+        ...(record.compactResult ? { compactResult: compactChildResultForParent(record.compactResult) } : {}),
+        ...(typeof record.rawOutputChars === "number" ? { rawOutputChars: record.rawOutputChars } : {}),
+        ...(typeof record.truncatedOutputChars === "number" ? { truncatedOutputChars: record.truncatedOutputChars } : {}),
+        ...(record.error ? { error: truncateField(String(record.error), 600) } : {}),
+        ...(record.notified !== undefined ? { notified: record.notified === true } : {}),
+        eventCount: typeof record.eventCount === "number" ? record.eventCount : events.length,
+    };
+}
+function compactChildRunRecords(records) {
+    return records.map(compactChildRunRecord);
+}
+export async function controlChildRun(input, scope = currentTaskScope(input.ctx)) {
     const action = input.action;
     if (action === "list") {
-        const records = collectLatestChildRunRecords(input.limit ?? 10);
+        const records = collectLatestChildRunRecords(input.limit ?? 10, scope);
         return {
             action,
-            records,
+            records: compactChildRunRecords(records),
             text: records.length ? records.map(compactRecordLine).join("\n") : "No child run records found.",
         };
     }
     if (!input.id) {
         return { action, records: [], text: `id is required for action=${action}` };
     }
-    const record = collectChildRunRecord(input.id);
+    const record = collectChildRunRecord(input.id, scope);
     if (!record) {
         return { action, records: [], text: `child not found: ${input.id}` };
     }
     if (action === "status") {
-        return { action, records: [record], text: recordLine(record) };
+        return { action, records: [compactChildRunRecord(record)], text: recordLine(record) };
     }
     if (action === "logs") {
-        const stdout = truncateForParent(readTextFile(record.stdoutPath), 4_000).text;
-        const stderr = truncateForParent(readTextFile(record.stderrPath), 2_000).text;
+        const paths = childRunPaths(record.id);
+        const stdout = truncateForParent(readTextFile(paths.stdoutPath), 4_000).text;
+        const stderr = truncateForParent(readTextFile(paths.stderrPath), 2_000).text;
         return {
             action,
-            records: [record],
+            records: [compactChildRunRecord(record)],
             text: [
                 recordLine(record),
                 `stdout_preview=${JSON.stringify(stdout)}`,
@@ -411,10 +618,17 @@ export async function controlChildRun(input) {
         };
     }
     if (action === "interrupt") {
+        if (record.status !== "background" && record.status !== "running" && record.status !== "starting") {
+            return {
+                action,
+                records: [compactChildRunRecord(record)],
+                text: `${recordLine(record)}\ninterrupt=refused reason=not_active`,
+            };
+        }
         if (!isPidAlive(record.pid)) {
             return {
                 action,
-                records: [record],
+                records: [compactChildRunRecord(record)],
                 text: `${recordLine(record)}\ninterrupt=noop reason=pid_not_alive`,
             };
         }
@@ -447,22 +661,28 @@ export async function controlChildRun(input) {
         });
         return {
             action,
-            records: [next],
+            records: [compactChildRunRecord(next)],
             text: `${recordLine(next)}\ninterrupt=sent signal=${signal}`,
         };
     }
     if (action === "resume") {
         const message = input.message?.trim();
         if (!message) {
-            return { action, records: [record], text: "action=resume requires message" };
+            return { action, records: [compactChildRunRecord(record)], text: "action=resume requires message" };
         }
         if ((record.status === "background" || record.status === "running" || record.status === "starting") && isPidAlive(record.pid)) {
             return {
                 action,
-                records: [record],
+                records: [compactChildRunRecord(record)],
                 text: `${recordLine(record)}\nresume=noop reason=child_still_running`,
             };
         }
+        const resumeDecision = decisionFromRecord(record);
+        const spawnOptions = {
+            ...(input.spawnOptions ?? {}),
+            ...(resumeDecision ? { decision: resumeDecision } : {}),
+        };
+        const paths = childRunPaths(record.id);
         const prompt = [
             "You are resuming a previous SISO child run.",
             "",
@@ -471,8 +691,8 @@ export async function controlChildRun(input) {
             `Previous profile: ${record.profile}`,
             `Previous model: ${record.model}`,
             `Previous compact result: ${JSON.stringify(record.compactResult)}`,
-            `Previous stdout path: ${record.stdoutPath}`,
-            `Previous stderr path: ${record.stderrPath}`,
+            `Previous stdout path: ${paths.stdoutPath}`,
+            `Previous stderr path: ${paths.stderrPath}`,
             "",
             "Follow-up:",
             message,
@@ -480,13 +700,14 @@ export async function controlChildRun(input) {
         const result = await runProfileSpawn(prompt, {
             cwd: record.cwd,
             background: input.background ?? true,
+            ctx: input.ctx,
             ...(typeof input.timeoutMs === "number" ? { timeoutMs: input.timeoutMs } : {}),
-            ...(input.spawnOptions ?? {}),
+            ...spawnOptions,
         });
-        const next = collectChildRunRecord(result.id);
+        const next = collectChildRunRecord(result.id, scope);
         return {
             action,
-            records: [record, ...(next ? [next] : [])],
+            records: compactChildRunRecords([record, ...(next ? [next] : [])]),
             text: [
                 `resumed_child_id=${result.id}`,
                 `parent_child_id=${record.id}`,
@@ -496,21 +717,44 @@ export async function controlChildRun(input) {
             ].join("\n"),
         };
     }
-    return { action, records: [record], text: `unsupported action=${action}` };
+    return { action, records: [compactChildRunRecord(record)], text: `unsupported action=${action}` };
+}
+function decisionFromRecord(record) {
+    try {
+        const profile = getProfile(record.profile);
+        return {
+            kind: profile.role,
+            profile: profile.id,
+            lane: profile.lane,
+            model: profile.model,
+            tools: profile.tools,
+            contextTier: profile.defaultContext,
+            statePolicy: profile.statePolicy,
+            permissionProfile: profile.permissionProfile,
+            inheritContext: profile.defaultContext === "full",
+            needsWorktree: profile.statePolicy === "sprint-worktree",
+            maxParallelAgents: profile.maxParallelAgents,
+            rationale: "Resume preserves the original child route and permission ceiling.",
+        };
+    }
+    catch {
+        return undefined;
+    }
 }
 export function cleanupChildRunLogs(options = {}) {
     const dir = childRunDir();
     const now = Date.now();
-    const maxAgeHours = options.maxAgeHours ?? 24;
-    const maxRuns = options.maxRuns ?? 50;
-    const dryRun = options.dryRun ?? false;
+    const maxAgeHours = clampNumber(options.maxAgeHours, 24, CLEANUP_MAX_AGE_HOURS_MIN, CLEANUP_MAX_AGE_HOURS_MAX);
+    const maxRuns = clampNumber(options.maxRuns, 50, CLEANUP_MAX_RUNS_MIN, CLEANUP_MAX_RUNS_MAX);
+    const dryRun = !(options.confirm === true && options.dryRun !== true);
     let records;
     try {
         records = readdirSync(dir)
-            .filter((name) => name.endsWith(".json"))
+            .filter((name) => name.endsWith(".json") && !name.endsWith(".exit.json"))
             .map((name) => {
             try {
-                return JSON.parse(readFileSync(join(dir, name), "utf8"));
+                const record = JSON.parse(readFileSync(join(dir, name), "utf8"));
+                return sanitizeChildRunRecord(record);
             }
             catch {
                 return undefined;
@@ -530,7 +774,10 @@ export function cleanupChildRunLogs(options = {}) {
         const shouldPrune = ageHours > maxAgeHours || !keepIds.has(record.id);
         if (!shouldPrune || record.status === "background" || record.status === "running" || record.status === "starting")
             continue;
-        for (const path of [record.stdoutPath, record.stderrPath]) {
+        const paths = childRunPaths(record.id);
+        for (const path of [paths.stdoutPath, paths.stderrPath, paths.exitPath]) {
+            if (!pathUnderChildRunDir(path))
+                continue;
             try {
                 const stats = statSync(path);
                 if (stats.size === 0)
@@ -552,10 +799,11 @@ export function getChildRunStorageStats() {
     let records = [];
     try {
         records = readdirSync(dir)
-            .filter((name) => name.endsWith(".json"))
+            .filter((name) => name.endsWith(".json") && !name.endsWith(".exit.json"))
             .map((name) => {
             try {
-                return JSON.parse(readFileSync(join(dir, name), "utf8"));
+                const record = JSON.parse(readFileSync(join(dir, name), "utf8"));
+                return sanitizeChildRunRecord(record);
             }
             catch {
                 return undefined;
@@ -578,9 +826,10 @@ export function getChildRunStorageStats() {
     }
     const sizes = { recordBytes: 0, stdoutBytes: 0, stderrBytes: 0 };
     for (const record of records) {
-        sizes.recordBytes += fileSize(record.runRecordPath);
-        sizes.stdoutBytes += fileSize(record.stdoutPath);
-        sizes.stderrBytes += fileSize(record.stderrPath);
+        const paths = childRunPaths(record.id);
+        sizes.recordBytes += fileSize(paths.runRecordPath);
+        sizes.stdoutBytes += fileSize(paths.stdoutPath);
+        sizes.stderrBytes += fileSize(paths.stderrPath);
     }
     const timestamps = records
         .map((record) => Date.parse(record.updatedAt))
@@ -713,17 +962,33 @@ function chooseActiveChildId(children, previousActiveId, candidateId) {
         .sort((a, b) => Date.parse(b.updatedAt ?? b.startedAt ?? "0") - Date.parse(a.updatedAt ?? a.startedAt ?? "0"))[0];
     return active?.id;
 }
-export function setChildStatus(snapshot, activate) {
+export function setChildStatus(snapshot, activate, scope = currentTaskScope()) {
     const previous = globalThis.__SISO_ROUTER_STATUS__;
     const previousChild = previous?.children?.[snapshot.id];
     const now = nowIso();
     const nextSnapshot = {
+        rootSessionId: scope.rootSessionId,
+        parentSessionId: scope.parentSessionId,
+        ownerAgentId: scope.ownerAgentId,
+        ...(scope.spawnedByTaskId ? { spawnedByTaskId: scope.spawnedByTaskId } : {}),
+        depth: scope.depth,
         ...snapshot,
         startedAt: snapshot.startedAt ?? previousChild?.startedAt ?? now,
         updatedAt: snapshot.updatedAt ?? now,
     };
+    writeSessionAgent(nextSnapshot, scope);
+    const sessionProjection = projectSessionRouterStatus(scope);
+    const priorChildren = Object.fromEntries(Object.entries(previous?.children ?? {}).filter(([, child]) => {
+        if (!nextSnapshot.parentSessionId && !nextSnapshot.ownerAgentId)
+            return true;
+        return isRecordVisibleToScope(child, {
+            parentSessionId: nextSnapshot.parentSessionId,
+            ownerAgentId: nextSnapshot.ownerAgentId,
+        });
+    }));
     const children = {
-        ...(previous?.children ?? {}),
+        ...(sessionProjection.children ?? {}),
+        ...priorChildren,
         [nextSnapshot.id]: nextSnapshot,
     };
     const activeChildId = activate && !isTerminalChildStatus(nextSnapshot.status) ? nextSnapshot.id : chooseActiveChildId(children, previous?.activeChildId, nextSnapshot.id);
@@ -751,6 +1016,9 @@ function permissionedPiTools(tools, permissionProfile) {
     if (permissionProfile === "accept_edits" || permissionProfile === "lab_bypass")
         return normalized;
     return normalized.filter((tool) => !PI_MUTATING_TOOLS.has(tool));
+}
+export function effectivePiTools(decision, noTools = false) {
+    return noTools ? [] : permissionedPiTools(decision.tools, decision.permissionProfile);
 }
 function childRunStartedEvent(id, spec) {
     return createAgentEvent({
@@ -814,6 +1082,17 @@ export function buildCodexPrompt(task, decision, contextPacket, casePacket) {
         task,
     ].join("\n");
 }
+export function formatContextForDecision(decision, cwd) {
+    if (decision.contextTier === "none")
+        return undefined;
+    const packet = loadContextPacket(cwd);
+    if (decision.contextTier === "project") {
+        delete packet.globalRules;
+        delete packet.globalLessons;
+        delete packet.memoryIndex;
+    }
+    return formatContextPacket(packet);
+}
 export function buildSpawnSpec(task, options = {}, decision = chooseRoute(task)) {
     const cwd = resolveSpawnCwd(options.cwd);
     if (decision.model === "codex") {
@@ -838,7 +1117,7 @@ export function buildSpawnSpec(task, options = {}, decision = chooseRoute(task))
                     "--tools",
                     "read,find,ls,bash",
                     "-p",
-                    buildCodexPrompt(task, decision, formatContextPacket(loadContextPacket(cwd)), codexCasePacket),
+                    buildCodexPrompt(task, decision, formatContextForDecision(decision, cwd), codexCasePacket),
                 ],
                 cwd,
                 decision,
@@ -862,7 +1141,7 @@ export function buildSpawnSpec(task, options = {}, decision = chooseRoute(task))
                 "-C",
                 cwd,
                 "--json",
-                buildCodexPrompt(task, decision, formatContextPacket(loadContextPacket(cwd)), codexCasePacket),
+                buildCodexPrompt(task, decision, formatContextForDecision(decision, cwd), codexCasePacket),
             ],
             cwd,
             decision,
@@ -870,12 +1149,16 @@ export function buildSpawnSpec(task, options = {}, decision = chooseRoute(task))
         };
     }
     const command = options.command ?? process.env.SISO_PI_CODEX_COMMAND ?? defaultPiCodexCommand();
-    const tools = options.noTools ? [] : permissionedPiTools(decision.tools, decision.permissionProfile);
+    const tools = effectivePiTools(decision, options.noTools);
     const effectiveDecision = {
         ...decision,
         tools,
     };
     const args = [
+        "--provider",
+        options.provider ?? DEFAULT_PROVIDER,
+        "--model",
+        options.model ?? decision.model,
         "--no-session",
         "--no-skills",
         "--no-context-files",
@@ -889,7 +1172,7 @@ export function buildSpawnSpec(task, options = {}, decision = chooseRoute(task))
     else {
         args.push("--no-tools");
     }
-    args.push("-p", buildChildPrompt(task, effectiveDecision, formatContextPacket(loadContextPacket(cwd))));
+    args.push("-p", buildChildPrompt(task, effectiveDecision, formatContextForDecision(effectiveDecision, cwd)));
     return { adapter: "pi", command, args, cwd, decision: effectiveDecision, task };
 }
 function usageFrom(value) {
@@ -1064,6 +1347,8 @@ export function parseJsonEventLine(line, current) {
     }
 }
 export async function runProfileSpawn(task, options = {}, signal) {
+    options = normalizeSpawnOptions(task, options);
+    const scope = currentTaskScope(options.ctx);
     const spec = buildSpawnSpec(task, options, options.decision ?? chooseRoute(task));
     const id = childId();
     const startedEvent = childRunStartedEvent(id, spec);
@@ -1071,9 +1356,11 @@ export async function runProfileSpawn(task, options = {}, signal) {
     const tokens = { input: 0, output: 0, totalTokens: 0 };
     const paths = childRunPaths(id);
     const depthError = depthBlocked(options);
-    if (depthError || spec.unsupportedReason || options.dryRun) {
-        const status = depthError || spec.unsupportedReason ? "unsupported" : "planned";
-        const finalOutput = depthError ?? spec.unsupportedReason ?? "dry_run=true";
+    const fleetPolicyError = options.fleetPolicyError ?? checkFleetSpawnPolicy(options);
+    const shouldQueue = fleetPolicyError?.kind === "max_parallel" && options.queue !== false && !options.dryRun;
+    if (fleetPolicyError || depthError || spec.unsupportedReason || options.dryRun) {
+        const status = shouldQueue ? "queued" : fleetPolicyError || depthError || spec.unsupportedReason ? "unsupported" : "planned";
+        const finalOutput = fleetPolicyError?.reason ?? depthError ?? spec.unsupportedReason ?? "dry_run=true";
         const events = [startedEvent, childRunFinishedEvent(id, spec, status, 0)];
         const result = {
             id,
@@ -1097,11 +1384,19 @@ export async function runProfileSpawn(task, options = {}, signal) {
             runRecordPath: paths.runRecordPath,
             stdoutPath: paths.stdoutPath,
             stderrPath: paths.stderrPath,
-            ...(spec.unsupportedReason ? { error: spec.unsupportedReason } : {}),
+            ...(shouldQueue ? {
+                queuedAt: nowIso(),
+                queuedReason: fleetPolicyError.reason,
+                queuedSpawn: queuedSpawnOptions(task, options),
+            } : {}),
+            ...(options.fleetId ? { fleetId: options.fleetId } : {}),
+            ...(options.budget ? { budget: options.budget } : {}),
+            ...(options.allocationMetadata ? { allocationMetadata: options.allocationMetadata } : {}),
+            ...(fleetPolicyError && !shouldQueue || spec.unsupportedReason ? { error: fleetPolicyError?.reason ?? spec.unsupportedReason } : {}),
         };
         writeChildRunLogs(paths, "", "");
-        writeChildRunRecord(recordFromResult(result, paths));
-        setChildStatus(snapshotFromResult(result), true);
+        writeChildRunRecord(recordFromResult(result, paths, nowIso(), scope));
+        setChildStatus(snapshotFromResult(result), true, scope);
         return result;
     }
     if (signal?.aborted) {
@@ -1130,10 +1425,13 @@ export async function runProfileSpawn(task, options = {}, signal) {
             runRecordPath: paths.runRecordPath,
             stdoutPath: paths.stdoutPath,
             stderrPath: paths.stderrPath,
+            ...(options.fleetId ? { fleetId: options.fleetId } : {}),
+            ...(options.budget ? { budget: options.budget } : {}),
+            ...(options.allocationMetadata ? { allocationMetadata: options.allocationMetadata } : {}),
         };
         writeChildRunLogs(paths, "", "");
-        writeChildRunRecord(recordFromResult(result, paths));
-        setChildStatus(snapshotFromResult(result), true);
+        writeChildRunRecord(recordFromResult(result, paths, nowIso(), scope));
+        setChildStatus(snapshotFromResult(result), true, scope);
         return result;
     }
     if (options.background) {
@@ -1171,7 +1469,7 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 toolCalls: 0,
                 compactResult,
                 error: error.message,
-            }, false);
+            }, false, scope);
             writeChildRunRecord({
                 id,
                 status: "failed",
@@ -1190,6 +1488,9 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 tokens,
                 toolCalls: 0,
                 compactResult,
+                ...(options.fleetId ? { fleetId: options.fleetId } : {}),
+                ...(options.budget ? { budget: options.budget } : {}),
+                ...(options.allocationMetadata ? { allocationMetadata: options.allocationMetadata } : {}),
                 rawOutputChars: 0,
                 truncatedOutputChars: 0,
                 error: error.message,
@@ -1214,6 +1515,7 @@ export async function runProfileSpawn(task, options = {}, signal) {
             status: "background",
             adapter: spec.adapter,
             decision: spec.decision,
+            task: spec.task,
             command: spec.command,
             args: spec.args,
             cwd: spec.cwd,
@@ -1237,8 +1539,11 @@ export async function runProfileSpawn(task, options = {}, signal) {
             runRecordPath: paths.runRecordPath,
             stdoutPath: paths.stdoutPath,
             stderrPath: paths.stderrPath,
+            ...(options.fleetId ? { fleetId: options.fleetId } : {}),
+            ...(options.budget ? { budget: options.budget } : {}),
+            ...(options.allocationMetadata ? { allocationMetadata: options.allocationMetadata } : {}),
         };
-        writeChildRunRecord(recordFromResult(result, paths));
+        writeChildRunRecord(recordFromResult(result, paths, nowIso(), scope));
         emitSystemDbTelemetry("SISO_CHILD_START", {
             id,
             status: "background",
@@ -1251,7 +1556,7 @@ export async function runProfileSpawn(task, options = {}, signal) {
             startedAt: nowIso(),
             runRecordPath: paths.runRecordPath,
         });
-        setChildStatus(snapshotFromResult(result), true);
+        setChildStatus(snapshotFromResult(result), true, scope);
         return result;
     }
     setChildStatus({
@@ -1260,9 +1565,10 @@ export async function runProfileSpawn(task, options = {}, signal) {
         profile: spec.decision.profile,
         lane: spec.decision.lane,
         model: spec.decision.model,
+        task: spec.task,
         tokens,
         toolCalls: 0,
-    }, true);
+    }, true, scope);
     return await new Promise((resolve) => {
         let stdout = "";
         let stderr = "";
@@ -1270,7 +1576,6 @@ export async function runProfileSpawn(task, options = {}, signal) {
         let stderrFull = "";
         let stdoutBuffer = "";
         let settled = false;
-        let timedOut = false;
         let aborted = false;
         let terminalIntent;
         let killGraceTimer;
@@ -1284,7 +1589,6 @@ export async function runProfileSpawn(task, options = {}, signal) {
             model: spec.decision.model,
             events: [],
         };
-        const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
         const child = spawnProcess(spec.command, spec.args, {
             cwd: spec.cwd,
             env: spawnEnv(spec, options),
@@ -1307,7 +1611,6 @@ export async function runProfileSpawn(task, options = {}, signal) {
             if (settled)
                 return;
             settled = true;
-            clearTimeout(timer);
             if (killGraceTimer)
                 clearTimeout(killGraceTimer);
             if (forceFinishTimer)
@@ -1323,6 +1626,7 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 status,
                 adapter: spec.adapter,
                 decision: spec.decision,
+                task: spec.task,
                 command: spec.command,
                 args: spec.args,
                 cwd: spec.cwd,
@@ -1330,11 +1634,13 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 exitCode,
                 signal: closeSignal,
                 durationMs: Date.now() - start,
-                timedOut,
                 stdout,
                 stderr,
                 finalOutput: output.text,
                 compactResult,
+                ...(options.fleetId ? { fleetId: options.fleetId } : {}),
+                ...(options.budget ? { budget: options.budget } : {}),
+                ...(options.allocationMetadata ? { allocationMetadata: options.allocationMetadata } : {}),
                 rawOutputChars: output.originalChars,
                 truncatedOutputChars: output.truncatedChars,
                 tokens: state.tokens,
@@ -1347,7 +1653,7 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 ...(errorText ? { error: errorText } : {}),
             };
             writeChildRunLogs(paths, stdoutFull, stderrFull);
-            writeChildRunRecord(recordFromResult(result, paths));
+            writeChildRunRecord(recordFromResult(result, paths, nowIso(), scope));
             emitSystemDbTelemetry("SISO_CHILD_STOP", {
                 id,
                 status,
@@ -1365,14 +1671,13 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 error: result.error,
                 runRecordPath: paths.runRecordPath,
             });
-            setChildStatus(snapshotFromResult(result), false);
+            setChildStatus(snapshotFromResult(result), false, scope);
             resolve(result);
         };
         const requestTermination = (status) => {
             if (settled || terminalIntent)
                 return;
             terminalIntent = status;
-            timedOut = status === "timeout";
             aborted = status === "aborted";
             signalChildTree(child.pid, "SIGTERM");
             killGraceTimer = setTimeout(() => {
@@ -1383,13 +1688,9 @@ export async function runProfileSpawn(task, options = {}, signal) {
             forceFinishTimer = setTimeout(() => {
                 if (settled)
                     return;
-                const error = status === "timeout" ? `Timed out after ${timeoutMs}ms` : "Aborted";
-                finish(status, null, "SIGKILL", error);
+                finish(status, null, "SIGKILL", "Aborted");
             }, FORCE_FINISH_MS);
         };
-        const timer = setTimeout(() => {
-            requestTermination("timeout");
-        }, timeoutMs);
         const abortHandler = () => {
             requestTermination("aborted");
         };
@@ -1411,10 +1712,11 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 profile: spec.decision.profile,
                 lane: spec.decision.lane,
                 model: spec.decision.model,
+                task: spec.task,
                 pid: child.pid,
                 tokens: state.tokens,
                 toolCalls: state.toolCalls,
-            }, false);
+            }, false, scope);
         });
         child.stderr.on("data", (chunk) => {
             const text = chunk.toString("utf8");
@@ -1429,8 +1731,8 @@ export async function runProfileSpawn(task, options = {}, signal) {
                 parseJsonEventLine(stdoutBuffer, state);
             if (settled)
                 return;
-            const status = terminalIntent ?? (timedOut ? "timeout" : aborted ? "aborted" : exitCode === 0 ? "completed" : "failed");
-            const error = status === "completed" ? undefined : status === "timeout" ? `Timed out after ${timeoutMs}ms` : status === "aborted" ? "Aborted" : stderr || `Exited with code ${exitCode}`;
+            const status = terminalIntent ?? (aborted ? "aborted" : exitCode === 0 ? "completed" : "failed");
+            const error = status === "completed" ? undefined : status === "aborted" ? "Aborted" : stderr || `Exited with code ${exitCode}`;
             finish(status, exitCode, closeSignal, error);
         });
     });
@@ -1442,6 +1744,7 @@ export function snapshotFromResult(result) {
         profile: result.decision.profile,
         lane: result.decision.lane,
         model: result.decision.model,
+        task: result.task,
         startedAt: new Date(Date.now() - result.durationMs).toISOString(),
         updatedAt: nowIso(),
         pid: result.pid,
@@ -1456,26 +1759,109 @@ export function snapshotFromResult(result) {
         compactResult: result.compactResult,
         error: result.error,
         runRecordPath: result.runRecordPath,
+        ...allocationMetadataFields(result.allocationMetadata),
     };
 }
 export function publicSpawnResult(result) {
-    const { stdout: _stdout, stderr, ...rest } = result;
+    const events = Array.isArray(result.events) ? result.events : undefined;
+    const output = compactSpawnResultOutput(result);
     return {
-        ...rest,
-        stderrPreview: truncateForParent(stderr, CHILD_ERROR_LIMIT).text,
+        id: result.id,
+        status: result.status,
+        adapter: result.adapter,
+        decision: result.decision,
+        cwd: result.cwd,
+        ...(result.pid !== undefined ? { pid: result.pid } : {}),
+        ...(result.exitCode !== undefined ? { exitCode: result.exitCode } : {}),
+        ...(result.signal !== undefined ? { signal: result.signal } : {}),
+        ...(result.durationMs !== undefined ? { durationMs: result.durationMs } : {}),
+        ...(result.timedOut !== undefined ? { timedOut: result.timedOut } : {}),
+        finalOutput: output.text,
+        ...(result.compactResult ? { compactResult: compactChildResultForParent(result.compactResult) } : {}),
+        ...(result.fleetId ? { fleetId: result.fleetId } : {}),
+        ...(result.budget ? { budget: result.budget } : {}),
+        ...(result.queuedAt ? { queuedAt: result.queuedAt } : {}),
+        ...(result.queuedReason ? { queuedReason: truncateField(String(result.queuedReason), 500) } : {}),
+        ...(result.notified !== undefined ? { notified: result.notified === true } : {}),
+        ...(result.error ? { error: truncateField(String(result.error), 600) } : {}),
+        ...(result.runRecordPath ? { runRecordPath: result.runRecordPath } : {}),
+        ...(result.stdoutPath ? { stdoutPath: result.stdoutPath } : {}),
+        ...(result.stderrPath ? { stderrPath: result.stderrPath } : {}),
+        tokens: result.tokens ?? { input: 0, output: 0, totalTokens: 0 },
+        toolCalls: result.toolCalls ?? 0,
+        rawOutputChars: output.rawOutputChars,
+        truncatedOutputChars: output.truncatedOutputChars,
+        ...(events ? { eventCount: events.length } : {}),
+        stderrPreview: compactSpawnStderrPreview(result.stderr, result),
     };
 }
+function spawnResultMaxChars() {
+    const parsed = Number.parseInt(process.env.SISO_LEGACY_SUBAGENT_RESULT_MAX_CHARS ?? "900", 10);
+    return Number.isFinite(parsed) && parsed >= 200 ? parsed : 900;
+}
+function compactSpawnResultOutput(result) {
+    const summary = result.compactResult?.summary ?? "Child completed without a summary.";
+    const text = result.finalOutput?.trim() || summary;
+    const maxChars = spawnResultMaxChars();
+    const rawOutputChars = Math.max(result.rawOutputChars ?? 0, text.length);
+    if (text.length <= maxChars) {
+        return {
+            text,
+            rawOutputChars,
+            truncatedOutputChars: result.truncatedOutputChars ?? 0,
+        };
+    }
+    const pointer = result.stdoutPath ?? result.runRecordPath ?? "child artifact";
+    const preview = text.slice(0, maxChars).trimEnd();
+    return {
+        text: `${preview}\n[SISO_LEGACY_RESULT_TRUNCATED original_chars=${rawOutputChars} shown_chars=${maxChars} full_output=${pointer}]`,
+        rawOutputChars,
+        truncatedOutputChars: Math.max(result.truncatedOutputChars ?? 0, rawOutputChars - maxChars),
+    };
+}
+function compactSpawnStderrPreview(stderr, result) {
+    const text = String(stderr ?? "");
+    const maxChars = spawnResultMaxChars();
+    if (text.length <= maxChars)
+        return text;
+    const pointer = result.stderrPath ?? result.runRecordPath ?? "child artifact";
+    return `[SISO_LEGACY_STDERR_TRUNCATED original_chars=${text.length} shown_chars=0 full_output=${pointer}]`;
+}
 export function formatSpawnResult(task, result) {
+    if (result.status === "background") {
+        return [
+            "SISO subagent launched in background.",
+            `Task: ${task}`,
+            `Profile: ${result.decision.profile}`,
+            `Model: ${result.decision.model}`,
+            `child_id=${result.id}`,
+            "The child is running independently. A <task-notification> will be fed back into this chat when it completes.",
+        ].join("\n");
+    }
+    const status = result.status === "completed" ? "completed" : result.status;
+    const output = compactSpawnResultOutput(result);
     return [
+        `SISO subagent ${status}.`,
+        `Task: ${task}`,
+        `Profile: ${result.decision.profile}`,
+        `Model: ${result.decision.model}`,
+        `Usage: ${result.tokens.totalTokens} tokens · ${result.toolCalls} tools`,
+        "",
+        "Result:",
+        output.text,
+        "",
         `kind=${result.decision.kind}`,
         `profile=${result.decision.profile}`,
         `lane=${result.decision.lane}`,
         `model=${result.decision.model}`,
         `child_id=${result.id}`,
         `child_status=${result.status}`,
+        `child_tokens_total=${result.tokens.totalTokens}`,
         `child_tokens_estimated=${result.tokens.totalTokens}`,
         `child_tool_calls=${result.toolCalls}`,
         `child_notified=${result.notified === true}`,
+        `child_output_chars=${output.rawOutputChars}`,
+        `child_output_truncated_chars=${output.truncatedOutputChars}`,
         ...(result.error ? [`child_error=${JSON.stringify(truncateForParent(result.error, 80).text)}`] : []),
     ].join("\n");
 }

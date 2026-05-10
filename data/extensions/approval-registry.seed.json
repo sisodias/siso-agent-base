@@ -1,0 +1,316 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-10T05:28:18.262Z",
+  "extensions": [
+    {
+      "id": "pi.dev:pi-mcp-adapter",
+      "name": "pi-mcp-adapter",
+      "version": "2.5.4",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/pi-mcp-adapter",
+      "npmUrl": "https://www.npmjs.com/package/pi-mcp-adapter",
+      "repoUrl": "https://github.com/nicobailon/pi-mcp-adapter",
+      "status": "approved",
+      "decision": "fork",
+      "capabilities": [
+        "mcp-integrations"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 87,
+      "risk": {
+        "score": 40,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions exec",
+          "mentions write",
+          "mentions browser",
+          "mentions chrome",
+          "mentions server",
+          "mentions mcp",
+          "mentions token",
+          "mentions system prompt"
+        ]
+      },
+      "notes": "Potential MCP compatibility adapter; keep SISO permission/tool exposure centralized.",
+      "approvedAt": "2026-05-10T05:28:17.534Z",
+      "updatedAt": "2026-05-10T05:28:18.262Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": [
+          "mcp"
+        ]
+      }
+    },
+    {
+      "id": "pi.dev:context-mode",
+      "name": "context-mode",
+      "version": "1.0.111",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/context-mode",
+      "npmUrl": "https://www.npmjs.com/package/context-mode",
+      "repoUrl": "https://github.com/mksglu/context-mode",
+      "status": "approved",
+      "decision": "copy-pattern",
+      "capabilities": [
+        "memory-context",
+        "code-intelligence"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 87,
+      "risk": {
+        "score": 40,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions shell",
+          "mentions exec",
+          "mentions execute",
+          "mentions write",
+          "mentions server",
+          "mentions mcp",
+          "mentions token"
+        ]
+      },
+      "notes": "Study FTS/intent search/context compression; SISO keeps provider filtering and permissions.",
+      "approvedAt": "2026-05-10T05:28:17.144Z",
+      "updatedAt": "2026-05-10T05:28:18.129Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": [
+          "memory"
+        ]
+      }
+    },
+    {
+      "id": "pi.dev:pi-subagents",
+      "name": "pi-subagents",
+      "version": "0.24.0",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/pi-subagents",
+      "npmUrl": "https://www.npmjs.com/package/pi-subagents",
+      "repoUrl": "https://github.com/nicobailon/pi-subagents",
+      "status": "approved",
+      "decision": "copy-pattern",
+      "capabilities": [
+        "agent-orchestration",
+        "task-workflow"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 92,
+      "risk": {
+        "score": 25,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions exec",
+          "mentions execute",
+          "mentions write"
+        ]
+      },
+      "notes": "Take role/prompt/chain UX ideas; SISO keeps child routing, scoped records, and Bifrost profiles.",
+      "approvedAt": "2026-05-10T05:28:17.000Z",
+      "updatedAt": "2026-05-10T05:28:17.979Z",
+      "activation": {
+        "default": false,
+        "profiles": [
+          "planner"
+        ],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": [
+          "orchestration"
+        ]
+      }
+    },
+    {
+      "id": "pi.dev:pi-web-access",
+      "name": "pi-web-access",
+      "version": "0.10.7",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/pi-web-access",
+      "npmUrl": "https://www.npmjs.com/package/pi-web-access",
+      "repoUrl": "https://github.com/nicobailon/pi-web-access",
+      "status": "approved",
+      "decision": "fork",
+      "capabilities": [
+        "web-research"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 89,
+      "risk": {
+        "score": 35,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions browser",
+          "mentions chrome",
+          "mentions server",
+          "mentions mcp",
+          "mentions token"
+        ]
+      },
+      "notes": "Strong web/PDF/GitHub/YouTube scope; high exfil risk, audit before install.",
+      "approvedAt": "2026-05-10T05:28:17.857Z",
+      "updatedAt": "2026-05-10T05:28:17.857Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": []
+      }
+    },
+    {
+      "id": "pi.dev:@juicesharp/rpiv-todo",
+      "name": "@juicesharp/rpiv-todo",
+      "version": "1.3.1",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/@juicesharp/rpiv-todo",
+      "npmUrl": "https://www.npmjs.com/package/@juicesharp/rpiv-todo",
+      "repoUrl": "https://github.com/juicesharp/rpiv-mono",
+      "status": "approved",
+      "decision": "copy-pattern",
+      "capabilities": [
+        "task-workflow",
+        "ui-dashboard"
+      ],
+      "recommendation": "install-candidate",
+      "score": 96,
+      "risk": {
+        "score": 15,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions chrome"
+        ]
+      },
+      "notes": "Copy persistent todo overlay/task UX ideas into SISO task source of truth.",
+      "approvedAt": "2026-05-10T05:28:17.749Z",
+      "updatedAt": "2026-05-10T05:28:17.749Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": []
+      }
+    },
+    {
+      "id": "pi.dev:pi-lens",
+      "name": "pi-lens",
+      "version": "3.8.42",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/pi-lens",
+      "npmUrl": "https://www.npmjs.com/package/pi-lens",
+      "repoUrl": "https://github.com/apmantza/pi-lens",
+      "status": "approved",
+      "decision": "copy-pattern",
+      "capabilities": [
+        "code-intelligence"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 89,
+      "risk": {
+        "score": 35,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions shell",
+          "mentions write",
+          "mentions server",
+          "mentions token",
+          "mentions secret"
+        ]
+      },
+      "notes": "Study live LSP/lint/typecheck diagnostics.",
+      "approvedAt": "2026-05-10T05:28:17.636Z",
+      "updatedAt": "2026-05-10T05:28:17.636Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": []
+      }
+    },
+    {
+      "id": "pi.dev:@samfp/pi-memory",
+      "name": "@samfp/pi-memory",
+      "version": "1.0.4",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/@samfp/pi-memory",
+      "npmUrl": "https://www.npmjs.com/package/@samfp/pi-memory",
+      "repoUrl": "https://github.com/samfoy/pi-memory",
+      "status": "approved",
+      "decision": "watch",
+      "capabilities": [
+        "memory-context"
+      ],
+      "recommendation": "install-candidate",
+      "score": 96,
+      "risk": {
+        "score": 15,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions system prompt"
+        ]
+      },
+      "notes": "Promising preference-learning UX; needs source/tarball review before install.",
+      "approvedAt": "2026-05-10T05:28:17.425Z",
+      "updatedAt": "2026-05-10T05:28:17.425Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": []
+      }
+    },
+    {
+      "id": "pi.dev:pi-hermes-memory",
+      "name": "pi-hermes-memory",
+      "version": "0.6.9",
+      "source": "pi.dev",
+      "packageUrl": "https://pi.dev/packages/pi-hermes-memory",
+      "npmUrl": "https://www.npmjs.com/package/pi-hermes-memory",
+      "repoUrl": "https://github.com/chandra447/pi-hermes-memory",
+      "status": "approved",
+      "decision": "copy-pattern",
+      "capabilities": [
+        "memory-context"
+      ],
+      "recommendation": "fork-candidate",
+      "score": 87,
+      "risk": {
+        "score": 35,
+        "reasons": [
+          "can influence agent runtime",
+          "declares executable extension entrypoints",
+          "mentions exec",
+          "mentions write",
+          "mentions token",
+          "mentions secret",
+          "mentions system prompt"
+        ]
+      },
+      "notes": "Study FTS5, session search, memory aging, and secret scanning ideas.",
+      "approvedAt": "2026-05-10T05:28:17.281Z",
+      "updatedAt": "2026-05-10T05:28:17.281Z",
+      "activation": {
+        "default": false,
+        "profiles": [],
+        "workspaces": [],
+        "commands": [],
+        "toolPacks": []
+      }
+    }
+  ]
+}

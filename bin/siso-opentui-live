@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CANDIDATES=(
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}/apps/siso-opentui/src/main.tsx"
+  "$SELF_DIR/../apps/siso-opentui/src/main.tsx"
+  "$PWD/apps/siso-opentui/src/main.tsx"
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}/scripts/siso-opentui-live.mjs"
+  "$PWD/scripts/siso-opentui-live.mjs"
+)
+ROOTS=(
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+  "$SELF_DIR/.."
+  "$PWD"
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+  "$PWD"
+)
+SCRIPT=""
+ROOT=""
+for i in "${!CANDIDATES[@]}"; do
+  candidate="${CANDIDATES[$i]}"
+  if [[ -f "$candidate" ]]; then
+    SCRIPT="$candidate"
+    ROOT="${ROOTS[$i]}"
+    break
+  fi
+done
+if [[ -z "$SCRIPT" ]]; then
+  echo "Unable to find SISO OpenTUI entrypoint" >&2
+  printf 'Checked:\n%s\n' "${CANDIDATES[@]}" >&2
+  exit 1
+fi
+export SISO_OPENTUI_CWD="${SISO_OPENTUI_CWD:-$PWD}"
+cd "$ROOT"
+if command -v bun >/dev/null 2>&1; then
+  exec bun "$SCRIPT" "$@"
+fi
+exec node "$SCRIPT" "$@"
