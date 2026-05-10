@@ -10,7 +10,8 @@ const piRoot = process.env.SISO_PI_PACKAGE_ROOT
 const checks = [
   {
     file: "modes/interactive/components/tool-execution.js",
-    needles: ["function sisoCompactToolDisplay", "function sisoCompactToolExecution", "function sisoStatusIcon", "function sisoErrorReason", "function sisoBashIntent", "missing file", "readableStatus", "launching", "labels = {", "council", "if (!this.expanded)", "const expandHint = \"\"", "const bgFn = (text) => text;", "this.contentBox = new Box(1, 0", "this.contentText = new Text(\"\", 1, 0", "this.addChild(this.contentBox);", "const useSelfShell = this.expanded && this.getRenderShell() === \"self\"", "inactiveContainer.clear()", "animationPhase = 0", "startSisoAnimation()", "setInterval(() =>", "sisoStatusIcon(statusKind, phase)", "sisoToolChip(name)", "working···"],
+    needles: ["function sisoCompactToolDisplay", "function sisoCompactToolExecution", "function sisoStatusIcon", "function sisoErrorReason", "function sisoBashIntent", "readableStatus", "launching", "labels = {", "council", "if (!this.expanded)", "const expandHint = \"\"", "const bgFn = (text) => text;", "this.contentBox = new Box(1, 0", "this.contentText = new Text(\"\", 1, 0", "this.addChild(this.contentBox);", "animationPhase = 0", "startSisoAnimation()", "setInterval(() =>", "sisoStatusIcon(statusKind, phase)", "working···"],
+    absent: ["timeoutSuffix", "limitSuffix", "s limit", "token limit", "tool limit"],
   },
   {
     file: "core/tools/bash.js",
@@ -42,19 +43,32 @@ const checks = [
   },
   {
     file: "modes/interactive/components/footer.js",
-    needles: ["function sisoDisplayModel", "function sanitizeStatusText", "Oracle GPT-5.5", "Build clean SISO footer", "sisoContextTokens", "contextBar", "calls", "sub", "active", "const modelText = theme.fg(\"accent\", sisoDisplayModel", "Footer is intentionally single-line"],
+    needles: ["function sisoDisplayModel", "function sanitizeStatusText", "Oracle GPT-5.5", "Build clean SISO footer", "calls", "sub", "active", "const modelText = theme.fg(\"accent\", sisoDisplayModel", "Footer is intentionally single-line"],
   },
   {
     file: "modes/interactive/components/model-selector.js",
-    needles: ["function sisoDisplayModel", "sisoDisplayModel(item.id)", "Model Name: ${sisoDisplayModel(selected.model.id)}"],
+    needles: ["function sisoDisplayModel", "Oracle GPT-5.5", "MiniMax M2.7", "sisoDisplayModel(item.id)", "Model Name: ${sisoDisplayModel(selected.model.id)}"],
   },
   {
     file: "modes/interactive/components/scoped-models-selector.js",
-    needles: ["function sisoDisplayModel", "sisoDisplayModel(item.model.id)", "Model Name: ${sisoDisplayModel(selected.model.id)}"],
+    needles: ["function sisoDisplayModel", "Oracle GPT-5.5", "MiniMax M2.7", "sisoDisplayModel(item.model.id)", "Model Name: ${sisoDisplayModel(selected.model.id)}"],
   },
   {
     file: "modes/interactive/interactive-mode.js",
-    needles: ["function sisoDisplayModel", "Model: ${sisoDisplayModel(model.id)}"],
+    needles: ["function sisoDisplayModel", "Oracle GPT-5.5", "Model: ${sisoDisplayModel(model.id)}", "this.ui.addChild(this.widgetContainerBelow);\n        this.ui.addChild(this.footer);"],
+  },
+];
+
+const exactCounts = [
+  {
+    file: "modes/interactive/components/tool-execution.js",
+    pattern: "    startSisoAnimation() {",
+    count: 1,
+  },
+  {
+    file: "modes/interactive/components/tool-execution.js",
+    pattern: "    stopSisoAnimation() {",
+    count: 1,
   },
 ];
 
@@ -67,6 +81,17 @@ for (const check of checks) {
   for (const needle of check.needles) {
     if (!text.includes(needle)) throw new Error(`missing renderer patch marker "${needle}" in ${path}`);
   }
+  for (const needle of check.absent ?? []) {
+    if (text.includes(needle)) throw new Error(`unexpected renderer patch marker "${needle}" in ${path}`);
+  }
+}
+
+for (const check of exactCounts) {
+  const path = join(piRoot, check.file);
+  if (!existsSync(path)) throw new Error(`missing ${path}`);
+  const text = readFileSync(path, "utf8");
+  const actual = text.split(check.pattern).length - 1;
+  if (actual !== check.count) throw new Error(`expected ${check.count} occurrences of "${check.pattern}" in ${path}, found ${actual}`);
 }
 
 console.log("SISO_PI_NATIVE_RENDERERS_SMOKE_OK");

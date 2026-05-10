@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-10",
+  "purpose": "Lazy-load pack metadata for grouping Tool Scenario Cards without injecting every executable schema into context.",
+  "packs": [
+    {
+      "id": "repo-navigation",
+      "summary": "Find, inspect, outline, and summarize repo context before edits.",
+      "useWhen": [
+        "Task requires understanding existing repository code, docs, symbols, or structure."
+      ],
+      "avoidWhen": [
+        "Task is pure conversation or only needs release/capability metadata."
+      ],
+      "contains": [
+        "repo-search",
+        "public-code-search",
+        "read-many",
+        "project-tree",
+        "project-map",
+        "ranked-repo-map",
+        "repo-index-build",
+        "repo-index-status",
+        "code-query",
+        "file-outline",
+        "symbol-search",
+        "context-pack",
+        "brief-repo"
+      ],
+      "firstTool": "code-query",
+      "fallbackTool": "repo-search",
+      "nextPacks": [
+        "workspace-validation",
+        "docs-capabilities"
+      ]
+    },
+    {
+      "id": "workspace-validation",
+      "summary": "Check workspace state, diffs, commands, and validation health.",
+      "useWhen": [
+        "Task involves verification, failing tests, review, or final changed-file summaries."
+      ],
+      "avoidWhen": [
+        "No files or runtime behavior are being inspected or changed."
+      ],
+      "contains": [
+        "run-check",
+        "autopilot-fix-loop",
+        "autopilot-plan",
+        "workspace-status",
+        "workspace-diff",
+        "contract-diff",
+        "source-drift",
+        "doctor-readiness"
+      ],
+      "firstTool": "workspace-status",
+      "fallbackTool": "run-check",
+      "nextPacks": [
+        "repo-navigation",
+        "docs-capabilities"
+      ]
+    },
+    {
+      "id": "docs-capabilities",
+      "summary": "Inspect and update capability/docs/release-adjacent metadata safely.",
+      "useWhen": [
+        "Task touches capability registry, changelog candidates, contracts, docs, or release tracking."
+      ],
+      "avoidWhen": [
+        "Task only needs source-code navigation or test execution."
+      ],
+      "contains": [
+        "capability-search",
+        "contract-diff"
+      ],
+      "firstTool": "capability-search",
+      "fallbackTool": "contract-diff",
+      "nextPacks": [
+        "workspace-validation"
+      ]
+    },
+    {
+      "id": "operations-readiness",
+      "summary": "Check SISO runtime, install, source drift, gateway, and doctor readiness.",
+      "useWhen": [
+        "Task involves local runtime health, installed/canonical drift, gateway readiness, or operator diagnostics."
+      ],
+      "avoidWhen": [
+        "Task is local source-only code exploration."
+      ],
+      "contains": [
+        "doctor-readiness",
+        "source-drift",
+        "workspace-status"
+      ],
+      "firstTool": "doctor-readiness",
+      "fallbackTool": "source-drift",
+      "nextPacks": [
+        "workspace-validation"
+      ]
+    }
+  ]
+}

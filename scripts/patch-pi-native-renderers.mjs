@@ -229,7 +229,7 @@ const patches = [
           `            renderContainer.clear();\n            if (!this.expanded) {\n                renderContainer.addChild(new Text(sisoCompactToolExecution(this.toolName, this.args, this.result, this.isPartial, this.animationPhase), 0, 0));\n                hasContent = true;\n            }\n            else {\n            const callRenderer = this.getCallRenderer();\n`,
           `            inactiveContainer.clear();\n            if (renderContainer instanceof Box) {\n                renderContainer.setBgFn(bgFn);\n            }\n            renderContainer.clear();\n            if (!this.expanded) {\n                renderContainer.addChild(new Text(sisoCompactToolExecution(this.toolName, this.args, this.result, this.isPartial, this.animationPhase), 0, 0));\n                hasContent = true;\n            }\n            else {\n            const callRenderer = this.getCallRenderer();\n`,
         ],
-        to: `            inactiveContainer.clear();\n            if (renderContainer instanceof Box) {\n                renderContainer.setBgFn(bgFn);\n            }\n            renderContainer.clear();\n            if (!this.expanded) {\n                renderContainer.addChild(new Text(sisoCompactToolExecution(this.toolName, this.args, this.result, this.isPartial, this.animationPhase), 0, 0));\n                hasContent = true;\n            }\n            else {\n            const callRenderer = this.getCallRenderer();\n`,
+        to: `            renderContainer.clear();\n            const callRenderer = this.getCallRenderer();\n`,
       },
       {
         from: [
@@ -404,6 +404,30 @@ for (const patch of patches) {
       `${toolHelpers}export class ToolExecutionComponent`,
     );
     next = next.replace(
+      /    animationInterval;\n    animationPhase = 0;\n/g,
+      "",
+    );
+    const animationMethods = `    startSisoAnimation() {
+        if (this.animationInterval) return;
+        this.animationInterval = setInterval(() => {
+            if (!this.executionStarted || (!this.isPartial && this.result)) {
+                this.stopSisoAnimation();
+                return;
+            }
+            this.animationPhase = (this.animationPhase + 1) % 4;
+            this.updateDisplay();
+            this.ui.requestRender();
+        }, 180);
+    }
+    stopSisoAnimation() {
+        if (!this.animationInterval) return;
+        clearInterval(this.animationInterval);
+        this.animationInterval = undefined;
+        this.animationPhase = 0;
+    }
+`;
+    next = next.split(animationMethods).join("");
+    next = next.replace(
       `        this.addChild(new Spacer(1));\n        // Always create all shell variants. contentBox is used for default renderer-based composition.\n`,
       `        // Always create all shell variants. contentBox is used for default renderer-based composition.\n`,
     );
@@ -421,8 +445,9 @@ for (const patch of patches) {
     );
     next = next.replace(
       `    maybeConvertImagesForKitty() {\n`,
-      `    startSisoAnimation() {\n        if (this.animationInterval) return;\n        this.animationInterval = setInterval(() => {\n            if (!this.executionStarted || (!this.isPartial && this.result)) {\n                this.stopSisoAnimation();\n                return;\n            }\n            this.animationPhase = (this.animationPhase + 1) % 4;\n            this.updateDisplay();\n            this.ui.requestRender();\n        }, 180);\n    }\n    stopSisoAnimation() {\n        if (!this.animationInterval) return;\n        clearInterval(this.animationInterval);\n        this.animationInterval = undefined;\n        this.animationPhase = 0;\n    }\n    maybeConvertImagesForKitty() {\n`,
+      `${animationMethods}    maybeConvertImagesForKitty() {\n`,
     );
+    if (!next.includes("sisoCompactToolExecution(this.toolName, this.args, this.result, this.isPartial, this.animationPhase)")) {
     next = next.replace(
       `        this.contentBox = new Box(1, 1, (text) => theme.bg("toolPendingBg", text));\n`,
       `        this.contentBox = new Box(1, 0, (text) => theme.bg("toolPendingBg", text));\n`,
@@ -435,14 +460,7 @@ for (const patch of patches) {
       `        if (this.hasRendererDefinition()) {\n            this.addChild(this.getRenderShell() === "self" ? this.selfRenderContainer : this.contentBox);\n        }\n        else {\n`,
       `        if (this.hasRendererDefinition()) {\n            if (this.getRenderShell() === "self") {\n                this.addChild(this.contentBox);\n                this.addChild(this.selfRenderContainer);\n            }\n            else {\n                this.addChild(this.contentBox);\n            }\n        }\n        else {\n`,
     );
-    next = next.replace(
-      `            const renderContainer = this.getRenderShell() === "self" ? this.selfRenderContainer : this.contentBox;\n            if (renderContainer instanceof Box) {\n`,
-      `            const useSelfShell = this.expanded && this.getRenderShell() === "self";\n            const renderContainer = useSelfShell ? this.selfRenderContainer : this.contentBox;\n            const inactiveContainer = useSelfShell ? this.contentBox : this.selfRenderContainer;\n            inactiveContainer.clear();\n            if (renderContainer instanceof Box) {\n`,
-    );
-    next = next.replace(
-      `            const useSelfShell = this.expanded && this.getRenderShell() === "self";\n            const renderContainer = useSelfShell ? this.selfRenderContainer : this.contentBox;\n            const inactiveContainer = useSelfShell ? this.contentBox : this.selfRenderContainer;\n            inactiveContainer.clear();\n            if (renderContainer instanceof Box) {\n`,
-      `            const useSelfShell = this.expanded && this.getRenderShell() === "self";\n            const renderContainer = useSelfShell ? this.selfRenderContainer : this.contentBox;\n            const inactiveContainer = useSelfShell ? this.contentBox : this.selfRenderContainer;\n            inactiveContainer.clear();\n            if (renderContainer instanceof Box) {\n`,
-    );
+    }
   }
   if (patch.file === "modes/interactive/components/footer.js") {
     next = next.replace(
@@ -499,16 +517,6 @@ for (const patch of patches) {
       throw new Error(`patch target not found in ${path}`);
     }
     next = next.replace(source, replacement.to);
-  }
-  if (patch.file === "modes/interactive/components/tool-execution.js") {
-    next = next.replace(
-      `            }\n        }\n        else {\n            this.contentText.setCustomBgFn(bgFn);\n`,
-      `            }\n            }\n        }\n        else {\n            this.contentText.setCustomBgFn(bgFn);\n`,
-    );
-    next = next.replace(
-      `            }\n            }\n            }\n            }\n        }\n        else {\n            this.contentText.setCustomBgFn(bgFn);\n`,
-      `            }\n            }\n        }\n        else {\n            this.contentText.setCustomBgFn(bgFn);\n`,
-    );
   }
   if (next !== text) {
     writeFileSync(path, next);

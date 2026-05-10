@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "description": "Local harness scorecard for Codex-like SISO architecture capabilities. This is not a live model quality benchmark.",
+  "capabilities": [
+    {
+      "id": "controller-plan-ingestion",
+      "weight": 15,
+      "description": "Workflow accepts GPT/controller allocation plans as objects or JSON text."
+    },
+    {
+      "id": "specialist-routing",
+      "weight": 15,
+      "description": "Assignments carry durable specialist ids, execution profiles, risk/domain metadata, and aliases."
+    },
+    {
+      "id": "live-child-joins",
+      "weight": 12,
+      "description": "Native and legacy scoped child records preserve allocation ids and assignment metadata."
+    },
+    {
+      "id": "verification-loop",
+      "weight": 15,
+      "description": "Workflow runs required checks, verifier review, feedback re-entry, and exhausted-failure handling."
+    },
+    {
+      "id": "evidence-contracts",
+      "weight": 10,
+      "description": "Worker prompts require changed files, checks, acceptance status, risks, and blockers."
+    },
+    {
+      "id": "route-controller-first",
+      "weight": 10,
+      "description": "High-risk and multi-domain tasks route through GPT-5.5 controller metadata."
+    },
+    {
+      "id": "side-by-side-live-evals",
+      "weight": 13,
+      "description": "Representative live direct Codex vs SISO benchmark exists."
+    },
+    {
+      "id": "first-class-tool-runtime",
+      "weight": 10,
+      "description": "SISO main runtime matches direct Codex first-class tool/session semantics."
+    }
+  ]
+}

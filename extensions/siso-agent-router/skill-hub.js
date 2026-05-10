@@ -1,7 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 const DEFAULT_ROOTS = [
+    "~/.siso/agent/profile/skills",
     "~/.claude/skills",
     "~/.agents/skills",
     "~/.codex/skills",
@@ -42,6 +43,11 @@ const SOURCE_SCORE = {
     superpowers: 55,
     codex: 45,
 };
+let catalogCache;
+const stats = {
+    catalogScans: 0,
+    catalogCacheHits: 0,
+};
 function expandHome(path) {
     return path.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
 }
@@ -56,6 +62,8 @@ function projectSkillRoots(cwd) {
         .map((suffix) => resolve(cwd, suffix));
 }
 function inferSource(root) {
+    if (root.includes("/.siso/agent/profile/skills") || root.includes("/templates/profile/skills"))
+        return "siso-profile";
     if (root.includes("/SISO_Workspace/"))
         return "workspace";
     if (root.includes("/.claude/"))
@@ -163,6 +171,47 @@ function scanRoot(root, maxDepth = 4) {
     walk(root, 0);
     return entries;
 }
+function statFingerprint(path) {
+    try {
+        const stat = statSync(path);
+        return `${path}:${stat.mtimeMs}:${stat.size}`;
+    }
+    catch {
+        return `${path}:missing`;
+    }
+}
+function skillCacheTtlMs() {
+    const parsed = Number.parseInt(process.env.SISO_SKILL_CACHE_TTL_MS ?? "30000", 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 30000;
+}
+function catalogForQuery(query = {}) {
+    const roots = [...projectSkillRoots(query.cwd), ...skillRoots()];
+    const cacheKey = `${roots.join("\0")}\n${roots.map(statFingerprint).join("\0")}`;
+    const ttlMs = skillCacheTtlMs();
+    if (process.env.SISO_SKILL_CACHE !== "0" && catalogCache?.key === cacheKey && Date.now() < catalogCache.expiresAt) {
+        stats.catalogCacheHits += 1;
+        return catalogCache.entries;
+    }
+    stats.catalogScans += 1;
+    const entries = roots.flatMap((root) => scanRoot(root));
+    if (process.env.SISO_SKILL_CACHE !== "0") {
+        catalogCache = { key: cacheKey, entries, expiresAt: Date.now() + ttlMs };
+    }
+    return entries;
+}
+export function getSkillCatalog(query = {}) {
+    return catalogForQuery(query);
+}
+export function clearSkillHubCache() {
+    catalogCache = undefined;
+}
+export function clearSkillHubStats() {
+    stats.catalogScans = 0;
+    stats.catalogCacheHits = 0;
+}
+export function skillHubStats() {
+    return { ...stats };
+}
 function skillRank(entry, needle) {
     const name = entry.name.toLowerCase();
     const id = entry.skillId.toLowerCase();
@@ -191,8 +240,7 @@ function skillRank(entry, needle) {
     return score;
 }
 export function querySkillHub(query = {}) {
-    const roots = [...projectSkillRoots(query.cwd), ...skillRoots()];
-    const all = roots.flatMap((root) => scanRoot(root));
+    const all = catalogForQuery(query);
     const op = query.op ?? (query.query ? "search" : "list");
     const needle = (op === "route" ? query.query : query.query)?.trim().toLowerCase();
     const source = query.source?.trim().toLowerCase();
@@ -222,6 +270,7 @@ export function querySkillHub(query = {}) {
         })
         : undefined;
     return {
+        op,
         total: all.length,
         returned: entries.length,
         entries,
@@ -261,6 +310,19 @@ function extractSection(text, section) {
 export function formatSkillHubResult(result) {
     if (result.entries.length === 0) {
         return `No SISO skills matched.\ntotal=${result.total}`;
+    }
+    const compact = (result.op === "list" || result.op === "search" || !result.body) && process.env.SISO_SKILL_OUTPUT_MODE !== "full";
+    if (compact) {
+        return [
+            `returned=${result.returned}`,
+            `total=${result.total}`,
+            ...result.entries.map((entry) => [
+                `id=${entry.skillId}`,
+                `name=${entry.name}`,
+                `source=${entry.source}`,
+                `summary=${JSON.stringify(entry.description.slice(0, 120))}`,
+            ].join(" ")),
+        ].join("\n");
     }
     return [
         `returned=${result.returned}`,

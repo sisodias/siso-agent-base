@@ -42,8 +42,23 @@ function toolCallIdOf(message) {
         return undefined;
     return typeof message.toolCallId === "string" ? message.toolCallId
         : typeof message.tool_call_id === "string" ? message.tool_call_id
-            : typeof message.id === "string" ? message.id
-                : undefined;
+            : Array.isArray(message.content) ? nestedToolCallIdOf(message.content)
+                : typeof message.id === "string" ? message.id
+                    : undefined;
+}
+function nestedToolCallIdOf(content) {
+    for (const part of content) {
+        if (!isRecord(part))
+            continue;
+        const id = typeof part.tool_use_id === "string" ? part.tool_use_id
+            : typeof part.toolCallId === "string" ? part.toolCallId
+                : typeof part.tool_call_id === "string" ? part.tool_call_id
+                    : typeof part.id === "string" ? part.id
+                        : undefined;
+        if (id)
+            return id;
+    }
+    return undefined;
 }
 function isToolResult(message) {
     if (!isRecord(message))
@@ -52,6 +67,8 @@ function isToolResult(message) {
     if (role === "toolResult" || role === "tool_result" || role === "tool")
         return true;
     if (message.type === "function_call_output")
+        return true;
+    if (Array.isArray(message.content) && message.content.some((part) => isRecord(part) && (part.type === "tool_result" || part.type === "function_call_output")))
         return true;
     return ("toolCallId" in message || "tool_call_id" in message) && ("result" in message || "content" in message || "output" in message);
 }
@@ -68,13 +85,31 @@ function compactSummary(text, limit = 900) {
     const summary = tail ? `${head}\n…\n${tail}` : head || text.slice(0, limit);
     return summary.slice(0, limit);
 }
-function tombstone(replacement, originalText) {
+function tombstone(replacement) {
     return [
         `[SISO_CONTEXT_FILTERED reason=${replacement.reason} original_chars=${replacement.originalChars} estimated_tokens=${replacement.estimatedTokens}]`,
-        `Summary:`,
-        compactSummary(originalText),
+        `Summary: Raw tool output was compacted before provider send to avoid replaying bulky or sensitive payloads.`,
         `Full raw output is preserved locally. Retrieve with: ${replacement.pointer}`,
     ].join("\n");
+}
+function replaceTextParts(parts, text) {
+    let replaced = false;
+    return parts.map((part) => {
+        const nextText = replaced ? "[SISO_CONTEXT_FILTERED_CONTINUATION]" : text;
+        if (typeof part === "string") {
+            replaced = true;
+            return nextText;
+        }
+        if (isRecord(part) && typeof part.text === "string") {
+            replaced = true;
+            return { ...part, text: nextText };
+        }
+        if (isRecord(part) && typeof part.content === "string") {
+            replaced = true;
+            return { ...part, content: nextText };
+        }
+        return part;
+    });
 }
 function replaceMessageContent(message, text) {
     if (!isRecord(message))
@@ -82,34 +117,12 @@ function replaceMessageContent(message, text) {
     const copy = { ...message };
     if (typeof copy.content === "string")
         copy.content = text;
-    else if (Array.isArray(copy.content)) {
-        copy.content = copy.content.map((part, index) => {
-            if (index > 0)
-                return part;
-            if (typeof part === "string")
-                return text;
-            if (isRecord(part) && typeof part.text === "string")
-                return { ...part, text };
-            if (isRecord(part) && typeof part.content === "string")
-                return { ...part, content: text };
-            return part;
-        });
-    }
+    else if (Array.isArray(copy.content))
+        copy.content = replaceTextParts(copy.content, text);
     else if (typeof copy.output === "string")
         copy.output = text;
-    else if (Array.isArray(copy.output)) {
-        copy.output = copy.output.map((part, index) => {
-            if (index > 0)
-                return part;
-            if (typeof part === "string")
-                return text;
-            if (isRecord(part) && typeof part.text === "string")
-                return { ...part, text };
-            if (isRecord(part) && typeof part.content === "string")
-                return { ...part, content: text };
-            return part;
-        });
-    }
+    else if (Array.isArray(copy.output))
+        copy.output = replaceTextParts(copy.output, text);
     else if (typeof copy.result === "string")
         copy.result = text;
     else if (typeof copy.text === "string")
@@ -165,7 +178,7 @@ export function filterContextMessages(messages, options = { runId: "unknown" }) 
         const pointer = `siso_context op=retrieve runId=${options.runId} eventId=${toolCallId ?? `context-message-${index}`}`;
         const replacement = { index, ...(toolCallId ? { toolCallId } : {}), reason, originalChars: text.length, estimatedTokens: tokens, pointer };
         replacements.push(replacement);
-        return replaceMessageContent(message, tombstone(replacement, text));
+        return replaceMessageContent(message, tombstone(replacement));
     });
     return {
         messages: next,

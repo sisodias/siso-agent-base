@@ -1,4 +1,5 @@
 import { formatToolDisplay } from "./tool-display.js";
+import { toTimelineRows } from "./timeline.js";
 const DEFAULTS = {
     route: "local",
     model: "unknown",
@@ -44,10 +45,9 @@ export function toStatusLine(state) {
     void skill;
     const inputTokens = estimatePromptTokens(state.inputTextChars + state.toolSchemaChars);
     const outputTokens = estimatePromptTokens(state.responseChars);
-    const routedTokens = router?.tokens?.totalTokens ?? child?.tokens?.totalTokens ?? 0;
-    void routedTokens;
     const children = childSnapshots(router);
     const activeChildren = children.filter((item) => isActiveChild(item.status));
+    const routedTokens = realTokenTotal(activeChildren) || router?.tokens?.totalTokens || child?.tokens?.totalTokens || realTokenTotal(children);
     const bits = ["π"];
     if (model && model !== "unknown")
         bits.push(displayModel(model));
@@ -56,6 +56,8 @@ export function toStatusLine(state) {
         bits.push(`${activeChildren.length} agent${activeChildren.length === 1 ? "" : "s"}`);
     else if (child?.status)
         bits.push(`agent ${childVerb(child.status)}`);
+    if (routedTokens > 0)
+        bits.push(`${formatTokens(routedTokens)} tok`);
     if (state.toolCalls > 0)
         bits.push(`${state.toolCalls} call${state.toolCalls === 1 ? "" : "s"}`);
     if (tool !== "-")
@@ -90,42 +92,19 @@ export function toAgentWidgetLines(state) {
     if (children.length === 0)
         return [];
     const activeChildren = children.filter((item) => isActiveChild(item.status));
-    const visibleChildren = children.slice(0, 4);
-    return [agentDrawerLine(children), ...visibleChildren.map(childHudLine)];
+    const visibleChildren = activeChildren.length > 0 ? activeChildren.slice(0, 4) : children.slice(0, 4);
+    return visibleChildren.map(childHudLine);
 }
 export function toWidgetLines(state) {
     const router = getRouterSnapshot();
-    const lines = [toStatusLine(state)];
-    if (state.lastPrompt || state.runStartedAt || state.activity[0]) {
-        lines.push(runStateLine(state, router));
-    }
-    if (state.requestChars > 0 || state.toolSchemaChars > 0 || state.historyItems > 0) {
-        lines.push(`ctx ${contextBar(estimatePromptTokens(state.inputTextChars + state.toolSchemaChars))} · input ${formatChars(state.inputTextChars)} · schemas ${formatChars(state.toolSchemaChars)}/${state.toolSchemaCount} · history ${state.historyItems}`);
-    }
     const children = childSnapshots(router);
     const activeChildren = children.filter((item) => isActiveChild(item.status));
-    if (activeChildren.length > 0) {
-        lines.push(agentDrawerLine(children));
-        for (const item of activeChildren.slice(0, 2)) {
-            lines.push(childHudLine(item));
-        }
-    }
-    else if (children.length > 0) {
-        lines.push(agentDrawerLine(children));
-        for (const item of children.slice(0, 2)) {
-            lines.push(childHudLine(item));
-        }
-    }
-    const groupedTools = groupedToolLine(state);
-    if (groupedTools)
-        lines.push(groupedTools);
-    const activity = state.activity.slice(0, 2).map(compactActivityLine).join("  ");
-    if (activity)
-        lines.push(`activity ${activity}`);
-    const hotSections = formatTopCategories(state.inputBreakdown.categories, 3);
-    if (hotSections)
-        lines.push(`prompt ${hotSections}`);
-    return lines;
+    if (activeChildren.length === 0)
+        return [];
+    return activeChildren.slice(0, 4).map(childHudLine);
+}
+export function toTimelineWidgetLines(state, limit = 4) {
+    return toTimelineRows(state, { limit, children: childSnapshots(getRouterSnapshot()) });
 }
 export function pushActivity(state, event) {
     const { ts, ...rest } = event;
@@ -141,6 +120,65 @@ function compactActivityLine(event) {
 export function toActivityLines(state, limit = 4) {
     return state.activity.slice(0, limit).map((event) => `activity ${formatActivityLine(event)}`);
 }
+export function formatContextExplain(state) {
+    const categories = Object.entries(state.inputBreakdown?.categories ?? {})
+        .filter(([, chars]) => chars > 0)
+        .sort(([, a], [, b]) => b - a);
+    const topBlocks = [...(state.inputBreakdown?.topBlocks ?? [])]
+        .sort((a, b) => b.chars - a.chars)
+        .slice(0, 6);
+    const categoryLines = categories.length
+        ? categories.slice(0, 10).map(([name, chars]) => `- ${name}: ${formatChars(chars)} chars (~${formatTokens(estimatePromptTokens(chars))} tokens)`)
+        : ["- none: no input text blocks recorded yet"];
+    const blockLines = topBlocks.length
+        ? topBlocks.map((block) => `- ${block.category}: ${formatChars(block.chars)} chars at ${compactPath(block.path)} · ${truncate(block.preview, 96)}`)
+        : ["- none"];
+    const inputTokens = estimatePromptTokens(state.inputTextChars + state.toolSchemaChars);
+    const warningLines = contextWarningLines(state, categories);
+    return [
+        "SISO context explain",
+        "",
+        `request=${formatChars(state.requestChars)} chars (~${formatTokens(estimatePromptTokens(state.requestChars))} tokens)`,
+        `input_text=${formatChars(state.inputTextChars)} chars (~${formatTokens(estimatePromptTokens(state.inputTextChars))} tokens)`,
+        `tool_schemas=${formatChars(state.toolSchemaChars)} chars across ${state.toolSchemaCount} tools (~${formatTokens(estimatePromptTokens(state.toolSchemaChars))} tokens)`,
+        `history_items=${state.historyItems}`,
+        `visible_context_estimate=${formatTokens(inputTokens)} tokens`,
+        "",
+        "Warnings",
+        ...warningLines,
+        "",
+        "By category",
+        ...categoryLines,
+        "",
+        "Top blocks",
+        ...blockLines,
+    ].join("\n");
+}
+function contextWarningLines(state, categories) {
+    const warnings = [];
+    const totalText = state.inputTextChars || 1;
+    const largest = categories[0];
+    if (largest) {
+        const [name, chars] = largest;
+        const share = chars / totalText;
+        if (name === "tool_output_history" && share >= 0.35) {
+            warnings.push(`- tool output is the largest context bucket (${Math.round(share * 100)}% of input text); prefer summaries or retrieval pointers.`);
+        }
+        else if (share >= 0.5 && name !== "user_prompt") {
+            warnings.push(`- ${name} dominates context (${Math.round(share * 100)}% of input text); check whether it can be summarized or lazily retrieved.`);
+        }
+    }
+    if (state.toolSchemaChars >= 20_000) {
+        warnings.push(`- tool schemas are heavy (${formatChars(state.toolSchemaChars)} chars); consider lean/deferred tool mode for this turn.`);
+    }
+    if (state.historyItems >= 80) {
+        warnings.push(`- history is large (${state.historyItems} items); consider a handoff/summary before more subagent work.`);
+    }
+    if (estimatePromptTokens(state.inputTextChars + state.toolSchemaChars) >= 200_000) {
+        warnings.push("- visible context estimate is already high; avoid pasting child transcripts or broad grep output.");
+    }
+    return warnings.length ? warnings.slice(0, 4) : ["- none"];
+}
 function estimatePromptTokens(chars) {
     return Math.ceil(chars / 4);
 }
@@ -153,6 +191,10 @@ function formatChars(chars) {
 }
 function truncate(value, limit) {
     return value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
+}
+function compactPath(path, limit = 56) {
+    const value = String(path ?? "");
+    return value.length > limit ? `…${value.slice(-(limit - 1))}` : value;
 }
 function formatTopCategories(categories, limit) {
     return Object.entries(categories)
@@ -195,7 +237,12 @@ function childSnapshots(router) {
     const children = Object.values(router?.children ?? {});
     if (children.length === 0 && router?.child)
         return [router.child];
-    return children.sort((a, b) => Date.parse(b.updatedAt ?? b.startedAt ?? "0") - Date.parse(a.updatedAt ?? a.startedAt ?? "0"));
+    return children.sort((a, b) => {
+        const started = Date.parse(a.startedAt ?? a.updatedAt ?? "0") - Date.parse(b.startedAt ?? b.updatedAt ?? "0");
+        if (started !== 0)
+            return started;
+        return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+    });
 }
 function isActiveChild(status) {
     return !isTerminalChild(status) && (status === "starting" || status === "running" || status === "background");
@@ -204,25 +251,26 @@ function isTerminalChild(status) {
     return status === "completed" || status === "failed" || status === "timeout" || status === "aborted" || status === "unsupported";
 }
 function childHudLine(child) {
-    const dot = childStatusGlyph(child.status);
-    const profile = child.profile ? ` · ${compactProfile(child.profile)}` : "";
-    const lane = child.lane ? ` · ${child.lane}` : "";
-    const tokens = child.tokens?.totalTokens ? formatTokens(child.tokens.totalTokens) : "0";
-    const calls = child.toolCalls ? ` · ${child.toolCalls} calls` : "";
-    const summary = child.compactResult?.summary ? ` · ${truncate(child.compactResult.summary, 44)}` : "";
-    const age = runtimeLabel(child);
-    return `${dot} ${compactChildId(child.id)}${profile}${lane} · ${displayModel(child.model)} · ${age} · ${tokens}t${calls}${summary}`;
+    const name = childAgentName(child);
+    const task = activeChildTask(child);
+    const taskText = task ? ` · ${task}` : "";
+    const age = child.durationMs && Number.isFinite(child.durationMs) ? formatDuration(child.durationMs) : ageSince(child.startedAt ?? child.updatedAt);
+    const verb = child.status === "starting" ? "spawning" : "running";
+    return `Agent ${verb} · ${name}${taskText} · ${age} · ${childMetricText(child)}`;
 }
 function agentDrawerLine(children) {
     const running = children.filter((child) => isActiveChild(child.status)).length;
     const done = children.filter((child) => child.status === "completed").length;
     const failed = children.filter((child) => isFailedChild(child.status)).length;
     const latest = children[0];
-    const latestAge = latest ? ` · latest ${ageSince(latest.startedAt ?? latest.updatedAt)}` : "";
+    const latestAge = latest && running === 0 ? ` · latest ${ageSince(latest.startedAt ?? latest.updatedAt)}` : "";
     const failedText = failed > 0 ? ` · ${failed} failed` : "";
+    const doneText = done > 0 ? ` · ${done} complete` : "";
     const grid = agentDotGrid(children);
     const gridText = grid ? ` ${grid}` : "";
-    return `agents${gridText} · ${children.length} total · ${running} active · ${done} complete${failedText}${latestAge}`;
+    if (running > 0)
+        return `agents${gridText} · ${running} active`;
+    return `agents${gridText} · ${children.length} total${doneText}${failedText}${latestAge}`;
 }
 export function agentDotGrid(children) {
     return children.slice(0, 12).map((child) => childStatusGlyph(child.status)).join("");
@@ -230,8 +278,10 @@ export function agentDotGrid(children) {
 function childStatusGlyph(status) {
     if (status === "completed")
         return "●";
-    if (isActiveChild(status))
-        return "◐";
+    if (isActiveChild(status)) {
+        const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+        return frames[Math.floor(Date.now() / 120) % frames.length];
+    }
     if (isFailedChild(status))
         return "×";
     if (status === "cancelled" || status === "aborted")
@@ -260,12 +310,114 @@ function compactChildId(id) {
 function compactProfile(profile) {
     return profile.replace(/^minimax\./, "mm.").replace(/^gpt54mini\./, "g54.").replace(/^spark\./, "sp.").replace(/^gpt55\./, "o.");
 }
+function childAgentName(child) {
+    const profile = child.profile ?? "";
+    const profileNames = {
+        "minimax.scout": "scout",
+        "minimax.worker": "worker",
+        "minimax.verifier": "MiniMax verifier",
+        "spark.worker": "Spark worker",
+        "spark.scout": "Spark scout",
+        "gpt54mini.worker": "GPT-5.4 Mini worker",
+        "gpt55.oracle": "Oracle",
+    };
+    if (profileNames[profile])
+        return profileNames[profile];
+    if (profile) {
+        return profile
+            .split(".")
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+    }
+    return "subagent";
+}
+function activeChildTask(child) {
+    if (typeof child.task === "string" && child.task.trim())
+        return compactTaskLabel(child.task);
+    const summary = child.compactResult?.summary ?? "";
+    if (!summary || /^background child supervisor started/i.test(summary))
+        return "";
+    return compactTaskLabel(summary);
+}
+function compactTaskLabel(value) {
+    const text = String(value ?? "").replace(/\s+/g, " ").trim();
+    if (!text)
+        return "";
+    if (isCommandDiagnostic(text))
+        return commandDiagnosticLabel(text);
+    const cleaned = text
+        .replace(/^yo\s+/i, "")
+        .replace(/^please\s+/i, "")
+        .replace(/^can you\s+/i, "")
+        .replace(/^spawn\s+\d+\s+/i, "spawn ")
+        .replace(/[^\p{L}\p{N}._/-]+/gu, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter((word) => !TASK_LABEL_STOPWORDS.has(word.toLowerCase()))
+        .slice(0, 4)
+        .join(" ");
+    return cleaned || truncate(text, 32);
+}
+const TASK_LABEL_STOPWORDS = new Set([
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "about",
+    "across",
+    "for",
+    "from",
+    "in",
+    "into",
+    "it",
+    "of",
+    "on",
+    "please",
+    "the",
+    "to",
+    "with",
+    "display",
+]);
+function isCommandDiagnostic(text) {
+    return /run commands?\s*·|latest\s+(bash|zsh|sh|node|npm)|\b(tail|grep|rg|sed|cat|awk|npm|node)\b.*\b(scripts\/|extensions\/|package\.json|CHANGELOG\.md)/i.test(text);
+}
+function commandDiagnosticLabel(text) {
+    if (/tui-demo-components|ChildAgentRow|tui-demo/i.test(text))
+        return "Inspect TUI components";
+    if (/siso-status|status-state|status-widget/i.test(text))
+        return "Inspect SISO status";
+    if (/subagent|child-agent|child/i.test(text))
+        return "Inspect subagent status";
+    if (/changelog|version|release/i.test(text))
+        return "Inspect release files";
+    return "Inspect command output";
+}
+function childMetricText(child) {
+    const toolCalls = child.toolCalls ?? 0;
+    const tokens = child.tokens?.totalTokens ?? 0;
+    const parts = [];
+    if (toolCalls > 0)
+        parts.push(`${toolCalls} check${toolCalls === 1 ? "" : "s"}`);
+    if (tokens > 0)
+        parts.push(`${formatTokens(tokens)} tok`);
+    return parts.length ? parts.join(" · ") : "working";
+}
+function realTokenTotal(children) {
+    return children.reduce((sum, child) => sum + Number(child.tokens?.totalTokens ?? 0), 0);
+}
 function runtimeLabel(child) {
     if (isActiveChild(child.status))
-        return `working ${ageSince(child.startedAt ?? child.updatedAt)}`;
+        return `${workingFrame()} ${ageSince(child.startedAt ?? child.updatedAt)}`;
     if (child.durationMs && Number.isFinite(child.durationMs))
         return formatDuration(child.durationMs);
     return childVerb(child.status);
+}
+function workingFrame() {
+    const frames = ["launching", "launching·", "launching··", "launching···"];
+    return frames[Math.floor(Date.now() / 250) % frames.length];
 }
 function formatDuration(ms) {
     const seconds = Math.max(0, Math.floor(ms / 1000));
@@ -500,6 +652,7 @@ export function applyEvent(state, eventType, payload = {}) {
                 kind: "tool",
                 phase: "start",
                 label: display.display,
+                toolName,
                 detail: `input=${toolInputChars(payload.input)}c`,
                 full: display.full,
             });
@@ -524,6 +677,7 @@ export function applyEvent(state, eventType, payload = {}) {
             kind: "tool",
             phase: eventType === "tool_execution_start" ? "start" : "update",
             label: display.display,
+            toolName,
             detail: typeof payload.status === "string" ? payload.status : undefined,
             full: display.full,
         });
@@ -543,6 +697,7 @@ export function applyEvent(state, eventType, payload = {}) {
             kind: "tool",
             phase: "end",
             label: formatToolDisplay(toolName, payload.input).display,
+            toolName,
             detail: typeof result === "string" ? `result=${result.length}c` : undefined,
         });
     }

@@ -26,6 +26,7 @@ export interface ActivityEvent {
     label: string;
     detail?: string;
     id?: string;
+    toolName?: string;
     full?: string;
 }
 export interface InputTextBlock {
@@ -56,6 +57,11 @@ export interface RouterChildSnapshot {
     profile: string;
     lane: string;
     model: string;
+    rootSessionId?: string;
+    parentSessionId?: string;
+    ownerAgentId?: string;
+    spawnedByTaskId?: string;
+    depth?: number;
     startedAt?: string;
     updatedAt?: string;
     pid?: number;
@@ -72,6 +78,7 @@ export interface RouterStatusSnapshot {
     lane?: string;
     model?: string;
     tokens?: RouterTokenUsage;
+    activeChildId?: string;
     child?: RouterChildSnapshot;
     children?: Record<string, RouterChildSnapshot>;
     updatedAt: string;
@@ -88,11 +95,13 @@ export declare function toText(state: SisoStatusState): string;
 export declare function toStatusLine(state: SisoStatusState): string;
 export declare function toAgentWidgetLines(state: SisoStatusState): string[];
 export declare function toWidgetLines(state: SisoStatusState): string[];
+export declare function toTimelineWidgetLines(state: SisoStatusState, limit?: number): string[];
 export declare function pushActivity(state: SisoStatusState, event: Omit<ActivityEvent, "ts"> & {
     ts?: string;
 }): void;
 export declare function formatActivityLine(event: ActivityEvent): string;
 export declare function toActivityLines(state: SisoStatusState, limit?: number): string[];
+export declare function formatContextExplain(state: SisoStatusState): string;
 export declare function agentDotGrid(children: RouterChildSnapshot[]): string;
 export declare function getRouterSnapshot(): RouterStatusSnapshot | undefined;
 export declare function summarizeProviderPayload(payload: unknown): Pick<SisoStatusState, "requestChars" | "inputTextChars" | "toolSchemaChars" | "toolSchemaCount" | "historyItems" | "inputBreakdown">;

@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "Side-by-side planning eval cases for comparing direct Codex-style planning with SISO controller allocation.",
+  "cases": [
+    {
+      "id": "auth-hardening-allocation",
+      "task": "Patch auth middleware route guards, harden session cookie policy, and add focused regression coverage.",
+      "controllerPlan": {
+        "taskKind": "implementation",
+        "complexity": "single_domain",
+        "riskTier": "high",
+        "domains": ["auth", "security", "testing"],
+        "assignments": [
+          {
+            "task": "Patch auth middleware route guards and harden session cookie policy with minimal blast radius.",
+            "specialistId": "specialist.auth.security",
+            "executionProfile": "spark.worker",
+            "requiredChecks": ["node -e \"process.exit(0)\""],
+            "acceptanceCriteria": [
+              "Unauthenticated protected routes redirect or reject consistently.",
+              "Session cookies use hardened security attributes where supported.",
+              "Focused regression coverage describes the route guard behavior."
+            ],
+            "reason": "Auth middleware and session cookie changes are high-risk security work and need a domain-rated owner."
+          }
+        ]
+      },
+      "expected": {
+        "specialistId": "specialist.auth.security",
+        "executionProfile": "spark.worker",
+        "requiredChecks": ["node -e \"process.exit(0)\""],
+        "acceptanceCriteriaMin": 2
+      }
+    },
+    {
+      "id": "stripe-webhook-allocation",
+      "task": "Implement Stripe subscription checkout, webhook idempotency, billing portal links, and verification checks.",
+      "controllerPlan": {
+        "taskKind": "implementation",
+        "complexity": "multi_domain",
+        "riskTier": "critical",
+        "domains": ["payments", "backend", "security", "testing"],
+        "assignments": [
+          {
+            "task": "Implement Stripe checkout and billing portal integration with webhook idempotency boundaries.",
+            "specialistId": "specialist.payments.stripe",
+            "executionProfile": "spark.worker",
+            "requiredChecks": ["node -e \"process.exit(0)\""],
+            "acceptanceCriteria": [
+              "Checkout session creation and billing portal flows have explicit ownership boundaries.",
+              "Webhook processing is idempotent and verifies event authenticity.",
+              "Verification checks cover the critical payment path."
+            ],
+            "reason": "Payments work should not be routed to a generic cheap edit worker without controller ownership."
+          }
+        ]
+      },
+      "expected": {
+        "specialistId": "specialist.payments.stripe",
+        "executionProfile": "spark.worker",
+        "requiredChecks": ["node -e \"process.exit(0)\""],
+        "acceptanceCriteriaMin": 2
+      }
+    },
+    {
+      "id": "agent-runtime-allocation",
+      "task": "Improve SISO workflow allocation metadata, scoped child record joins, and verifier evidence reporting.",
+      "controllerPlan": {
+        "taskKind": "implementation",
+        "complexity": "cross_repo",
+        "riskTier": "high",
+        "domains": ["agent-runtime", "tooling", "testing"],
+        "assignments": [
+          {
+            "task": "Patch workflow allocation metadata, scoped task joins, and evidence reporting for SISO child agents.",
+            "specialistId": "specialist.agent-system.runtime",
+            "executionProfile": "spark.worker",
+            "requiredChecks": ["node -e \"process.exit(0)\""],
+            "acceptanceCriteria": [
+              "Worker records include allocation, assignment, step, specialist, and verification metadata.",
+              "Verifier evidence is persisted in workflow records.",
+              "Smoke coverage proves metadata survives dry-run and native-like paths."
+            ],
+            "reason": "Agent runtime work needs a specialist that understands SISO orchestration and verification contracts."
+          }
+        ]
+      },
+      "expected": {
+        "specialistId": "specialist.agent-system.runtime",
+        "executionProfile": "spark.worker",
+        "requiredChecks": ["node -e \"process.exit(0)\""],
+        "acceptanceCriteriaMin": 2
+      }
+    }
+  ]
+}

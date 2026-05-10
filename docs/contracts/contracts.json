@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "contracts": [
+    {
+      "id": "release-metadata",
+      "name": "Release Metadata Contract",
+      "status": "draft",
+      "level": "required",
+      "appliesTo": [
+        "VERSION",
+        "package.json",
+        "releases/latest.json",
+        "CHANGELOG.md"
+      ],
+      "rules": [
+        "VERSION, package.json, releases/latest.json, and latest CHANGELOG heading must agree before release.",
+        "Release notes must mention user-facing capability changes or explicitly defer them."
+      ],
+      "requiredCommands": [
+        "npm run smoke:release"
+      ],
+      "evidence": [
+        "filesChanged",
+        "commandsRun",
+        "versionBeforeAfter"
+      ],
+      "capabilityIds": [
+        "release-metadata-smoke"
+      ]
+    },
+    {
+      "id": "capability-registry",
+      "name": "Capability Registry Contract",
+      "status": "draft",
+      "level": "required",
+      "appliesTo": [
+        "docs/capabilities/**",
+        "scripts/smoke-capability-registry.mjs",
+        "docs/contracts/**",
+        "scripts/smoke-contracts.mjs"
+      ],
+      "rules": [
+        "Every new feature/system capability should have a registry entry or a deliberate reason not to add one.",
+        "Validated capabilities must include implementation and validation metadata.",
+        "Release-worthy validated changes should add a changelog candidate."
+      ],
+      "requiredCommands": [
+        "npm run smoke:capabilities",
+        "npm run smoke:contracts"
+      ],
+      "evidence": [
+        "capabilityIdsChanged",
+        "commandsRun"
+      ],
+      "capabilityIds": [
+        "capability-registry",
+        "agent-contracts"
+      ]
+    },
+    {
+      "id": "test-space",
+      "name": "Test Space Contract",
+      "status": "draft",
+      "level": "required",
+      "appliesTo": [
+        "test-space/**",
+        "scripts/smoke-test-space*.mjs",
+        "test-space/results/coverage-summary.json",
+        "test-space/results/contracts-report.json"
+      ],
+      "rules": [
+        "Test suites must reference real capability IDs.",
+        "Scenario files must exist for suites.",
+        "Coverage must account for every capability as covered, external, manual, blocked, idea-only, or untested."
+      ],
+      "requiredCommands": [
+        "npm run smoke:test-space",
+        "npm run smoke:test-space-coverage"
+      ],
+      "evidence": [
+        "coverageSummary",
+        "commandsRun"
+      ],
+      "capabilityIds": [
+        "test-space"
+      ]
+    },
+    {
+      "id": "router-subagents",
+      "name": "Router and Subagents Contract",
+      "status": "draft",
+      "level": "permission-gated",
+      "appliesTo": [
+        "extensions/siso-agent-router/**"
+      ],
+      "rules": [
+        "Do not expose secrets, auth headers, raw local auth files, or unbounded raw tool output.",
+        "Preserve background child notification semantics.",
+        "Preserve maxRuntimeMs and maxParallel guardrails.",
+        "Do not reintroduce normal child-agent token/tool hard caps.",
+        "Compact noisy details and keep explicit retrieval paths bounded."
+      ],
+      "requiredCommands": [
+        "npm run smoke:router-lean",
+        "npm run smoke:status-lean",
+        "npm run smoke:agents-command",
+        "npm run smoke:child-control",
+        "npm run smoke:child-notifications",
+        "npm run smoke:subagent-lifecycle",
+        "npm run smoke:spawn-result",
+        "npm run smoke:composite-result"
+      ],
+      "riskFiles": [
+        "extensions/siso-agent-router/index.js",
+        "extensions/siso-agent-router/spawn-layer.js",
+        "extensions/siso-agent-router/native-subagent-bridge.js"
+      ],
+      "evidence": [
+        "commandsRun",
+        "riskFilesTouched",
+        "subagentKnownStatus"
+      ],
+      "capabilityIds": [
+        "route-policy",
+        "router-lean",
+        "child-agent-spawn",
+        "native-subagent-bridge",
+        "child-agent-notifications",
+        "child-run-control",
+        "spawn-result-normalization",
+        "runtime-guardrails",
+        "fleet-queue-control",
+        "agents-command",
+        "worker-guard"
+      ]
+    },
+    {
+      "id": "context-safety",
+      "name": "Context Safety Contract",
+      "status": "draft",
+      "level": "required",
+      "appliesTo": [
+        "extensions/siso-agent-router/context-loader.js",
+        "extensions/siso-agent-router/child-context-guard.js",
+        "scripts/smoke-context*.mjs"
+      ],
+      "rules": [
+        "Large/noisy outputs must be summarized by default.",
+        "Raw output retrieval must be explicit and bounded.",
+        "Context details must not silently carry huge payloads."
+      ],
+      "requiredCommands": [
+        "npm run smoke:context",
+        "npm run smoke:context-details",
+        "npm run smoke:context-explain",
+        "npm run smoke:context-tier"
+      ],
+      "evidence": [
+        "commandsRun",
+        "rawPayloadRisk"
+      ],
+      "capabilityIds": [
+        "context-filtering",
+        "context-memory-tools"
+      ]
+    },
+    {
+      "id": "install-runtime",
+      "name": "Install and Runtime Contract",
+      "status": "draft",
+      "level": "required",
+      "appliesTo": [
+        "bin/siso",
+        "bin/siso-doctor",
+        "bin/siso-update",
+        "bin/siso-where",
+        "install.sh",
+        "scripts/install-local.sh",
+        "package.json",
+        "VERSION",
+        "releases/latest.json"
+      ],
+      "rules": [
+        "Launcher, installed runtime, workspace source, and release metadata must not drift silently.",
+        "Install/update paths must preserve bundled Pi dependency routing.",
+        "Doctor output must remain actionable and must not print secrets."
+      ],
+      "requiredCommands": [
+        "npm run smoke:wrapper",
+        "npm run smoke:where",
+        "npm run smoke:doctor",
+        "npm run smoke:release",
+        "npm run smoke:source-drift"
+      ],
+      "evidence": [
+        "commandsRun",
+        "runtimeVersion",
+        "installDir"
+      ],
+      "capabilityIds": [
+        "siso-wrapper-launcher",
+        "install-update-repair",
+        "siso-doctor",
+        "source-drift-detector"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "eventTypes": [
+    "run.started",
+    "run.completed",
+    "tool.started",
+    "tool.completed",
+    "file.read",
+    "file.changed",
+    "command.validation",
+    "contract.matched",
+    "drift.detected",
+    "child.started",
+    "child.completed",
+    "context.filtered",
+    "scorecard.updated"
+  ],
+  "requiredTraceFields": [
+    "schemaVersion",
+    "runId",
+    "task",
+    "startedAt",
+    "events",
+    "metrics",
+    "scorecard"
+  ],
+  "requiredEventFields": ["type", "at"],
+  "metricFields": [
+    "toolCalls",
+    "failedToolCalls",
+    "filesRead",
+    "filesChanged",
+    "validationsRun",
+    "validationsPassed",
+    "childAgents",
+    "contextFilteredEvents",
+    "durationMs"
+  ],
+  "scoreFields": [
+    "taskAchievement",
+    "toolEfficiency",
+    "contextEfficiency",
+    "codeIntelligence",
+    "delegation",
+    "skillUsage",
+    "safetyGovernance",
+    "memoryImproveability",
+    "operatorExperience",
+    "overall"
+  ],
+  "scoreScale": { "min": 0, "max": 100 }
+}

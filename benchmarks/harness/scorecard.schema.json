@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "requiredFields": [
+    "runId",
+    "suiteId",
+    "startedAt",
+    "completedAt",
+    "status",
+    "scores",
+    "metrics",
+    "evidence"
+  ],
+  "scoreScale": {
+    "min": 0,
+    "max": 100,
+    "meaning": "100 means best observed/world-class for this suite."
+  },
+  "scores": [
+    "taskAchievement",
+    "toolEfficiency",
+    "contextEfficiency",
+    "codeIntelligence",
+    "delegation",
+    "skillUsage",
+    "safetyGovernance",
+    "memoryImproveability",
+    "operatorExperience",
+    "overall"
+  ]
+}

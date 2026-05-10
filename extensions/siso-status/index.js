@@ -1,56 +1,160 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, openSync, readFileSync, readSync, readdirSync, statSync, writeFileSync, closeSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { CustomEditor } from "@mariozechner/pi-coding-agent";
-import { Key, matchesKey, Text, truncateToWidth } from "@mariozechner/pi-tui";
-import { applyEvent, createStatusState, toStatusLine, toText, } from "./status-state.js";
-import { readLatestMetricsDashboard, readLatestMetricsTable } from "./bifrost-metrics.js";
+import { Container, Key, Loader, matchesKey, Text, truncateToWidth } from "@mariozechner/pi-tui";
+import { applyEvent, createStatusState, formatContextExplain, toStatusLine, toText, toTimelineWidgetLines, toWidgetLines, } from "./status-state.js";
+import { readDuplicateRequestReport, readLatestMetricsDashboard, readLatestMetricsTable } from "./bifrost-metrics.js";
+import { isRecordVisibleToScope, taskBudgetState, writeScopedTaskRecord } from "../siso-agent-router/task-registry.js";
+import { projectSessionRouterStatus, writeSessionAgent } from "../siso-agent-router/session-store.js";
 const DEFAULT_STATUS_PREFIX = "[siso-status]";
+const MAX_WIDGET_LINES = 4;
 function publish(ctx, state, promptQueue = []) {
     if (!ctx?.hasUI || !ctx.ui)
         return;
+    scopeRouterStatusToContext(ctx);
     const uiMode = process.env.SISO_STATUS_UI ?? "off";
     const showStatus = uiMode === "compact" || uiMode === "full";
-    const widgetLines = promptQueue.length > 0 ? queueWidgetLines(promptQueue) : undefined;
+    const statusWidgetLines = uiMode === "full" ? toWidgetLines(state) : [];
+    const showTimeline = process.env.SISO_STATUS_TIMELINE === "1";
+    const timelineLines = uiMode === "full" && showTimeline ? toTimelineWidgetLines(state, 3) : [];
+    const queueLines = promptQueue.length > 0 ? queueWidgetLines(promptQueue) : [];
+    const widget = buildWidgetContent(statusWidgetLines, timelineLines, queueLines);
     ctx.ui.setStatus?.("siso-status", showStatus ? toStatusLine(state) : undefined);
-    ctx.ui.setWidget?.("siso-status", widgetLines, { placement: "belowEditor" });
+    ctx.ui.setWidget?.("siso-status", widget, { placement: "belowEditor" });
+}
+function scopeRouterStatusToContext(ctx) {
+    const current = currentSessionId(ctx);
+    const router = globalThis.__SISO_ROUTER_STATUS__;
+    if (!current)
+        return;
+    const projection = projectSessionRouterStatus({ parentSessionId: current, ownerAgentId: current });
+    const routerChildren = Object.fromEntries(Object.entries(router?.children ?? {}).filter(([, child]) => isRecordVisibleToScope(child, {
+        parentSessionId: current,
+        ownerAgentId: current,
+    })));
+    const children = {
+        ...(projection.children ?? {}),
+        ...routerChildren,
+    };
+    const child = router?.child?.id && children[router.child.id] ? router.child : Object.values(children)[0];
+    const activeChildId = router?.activeChildId && children[router.activeChildId] ? router.activeChildId : child?.id;
+    if (router && Object.keys(children).length === Object.keys(router.children ?? {}).length && child === router.child && activeChildId === router.activeChildId)
+        return;
+    globalThis.__SISO_ROUTER_STATUS__ = {
+        ...(router ?? {}),
+        profile: child?.profile,
+        lane: child?.lane,
+        model: child?.model,
+        children,
+        child,
+        activeChildId,
+        tokens: child?.tokens,
+        updatedAt: new Date().toISOString(),
+    };
+}
+function buildWidgetContent(agentLines, timelineLines, queueLines) {
+    const sections = allocateWidgetLines(agentLines, timelineLines, queueLines);
+    agentLines = sections.agentLines;
+    timelineLines = sections.timelineLines;
+    queueLines = sections.queueLines;
+    if (agentLines.length === 0 && timelineLines.length === 0 && queueLines.length === 0)
+        return undefined;
+    if (agentLines.length === 0 && timelineLines.length === 0)
+        return queueLines;
+    return (tui, theme) => {
+        const container = new Container();
+        const loaders = [];
+        for (const line of agentLines) {
+            const loader = new Loader(tui, (spinner) => theme.fg("accent", spinner), (text) => theme.fg("muted", text), line);
+            loaders.push(loader);
+            container.addChild(loader);
+        }
+        if (timelineLines.length > 0) {
+            for (const line of timelineLines) {
+                container.addChild(new Text(line, 0, 0));
+            }
+        }
+        if (queueLines.length > 0) {
+            for (const line of queueLines) {
+                container.addChild(new Text(line, 1, 0));
+            }
+        }
+        const render = container.render.bind(container);
+        container.render = (width) => render(width).filter((line) => line.trim() !== "").slice(0, MAX_WIDGET_LINES);
+        container.dispose = () => {
+            for (const loader of loaders)
+                loader.stop();
+        };
+        return container;
+    };
+}
+function allocateWidgetLines(agentLines, timelineLines, queueLines) {
+    if (timelineLines.length > 0) {
+        const nextTimelineLines = timelineLines.slice(0, Math.min(3, MAX_WIDGET_LINES));
+        const remainingForAgents = Math.max(0, MAX_WIDGET_LINES - nextTimelineLines.length);
+        return {
+            agentLines: agentLines.slice(0, remainingForAgents),
+            timelineLines: nextTimelineLines,
+            queueLines: [],
+        };
+    }
+    let remaining = MAX_WIDGET_LINES;
+    const nextAgentLines = agentLines.slice(0, remaining);
+    remaining -= nextAgentLines.length;
+    const nextTimelineLines = remaining > 0 ? timelineLines.slice(0, remaining) : [];
+    remaining -= nextTimelineLines.length;
+    const nextQueueLines = remaining > 0 ? queueLines.slice(0, remaining) : [];
+    return { agentLines: nextAgentLines, timelineLines: nextTimelineLines, queueLines: nextQueueLines };
 }
 function queueWidgetLines(queue) {
     const head = `queue ${queue.length} prompt${queue.length === 1 ? "" : "s"} · Shift+Enter queues · /siso-queue-pop loads next`;
-    const preview = queue.slice(0, 3).map((item, index) => `${index + 1} ○ ${truncate(item.text, 72)}`);
-    const more = queue.length > 3 ? [`… ${queue.length - 3} more`] : [];
+    const previewLimit = queue.length > 3 ? 2 : 3;
+    const preview = queue.slice(0, previewLimit).map((item, index) => `${index + 1} ○ ${truncate(item.text, 72)}`);
+    const more = queue.length > previewLimit ? [`… ${queue.length - previewLimit} more`] : [];
     return [head, ...preview, ...more];
 }
 export default function sisoStatusExtension(pi) {
     const state = createStatusState();
-    let lastCtx;
+    const lastCtxBySession = new Map();
     const notifiedChildren = new Set();
-    const promptQueue = [];
-    pi.registerMessageRenderer?.("siso-agent", (message, options, theme) => {
+    const promptQueues = new Map();
+    const queueForSession = (sessionId) => {
+        let queue = promptQueues.get(sessionId);
+        if (!queue) {
+            queue = [];
+            promptQueues.set(sessionId, queue);
+        }
+        return queue;
+    };
+    const renderAgentMessage = (message, options, theme) => {
         const record = message.details;
         if (!record)
             return new Text(String(message.content ?? ""), 0, 0);
         const text = renderChildRunCard(record, Boolean(options.expanded), theme);
         return new Text(text, 0, 0);
-    });
+    };
+    pi.registerMessageRenderer?.("siso-agent", renderAgentMessage);
+    pi.registerMessageRenderer?.("siso-agent-completion", renderAgentMessage);
     const publishWith = (ctx) => {
-        if (ctx?.hasUI)
-            lastCtx = ctx;
-        publish(ctx, state, promptQueue);
+        const sessionId = explicitSessionId(ctx);
+        if (ctx?.hasUI && sessionId)
+            lastCtxBySession.set(sessionId, ctx);
+        publish(ctx, state, sessionId ? queueForSession(sessionId) : []);
     };
     const pollMs = Number.parseInt(process.env.SISO_STATUS_POLL_MS ?? "2000", 10);
     if (Number.isFinite(pollMs) && pollMs > 0) {
         const poll = setInterval(() => {
-            if (!lastCtx)
-                return;
-            const records = refreshRouterChildrenFromDisk(30, lastCtx);
-            notifyCompletedChildren(pi, records, notifiedChildren);
-            const children = Object.values(globalThis.__SISO_ROUTER_STATUS__?.children ?? {});
-            if (children.some((child) => child.status === "background" || child.status === "running" || child.status === "starting")) {
-                publish(lastCtx, state);
-            }
-            else if (children.length > 0) {
-                publish(lastCtx, state);
+            for (const [sessionId, ctx] of lastCtxBySession) {
+                const records = refreshRouterChildrenFromDisk(30, ctx);
+                notifyCompletedChildren(pi, records, notifiedChildren);
+                const children = Object.values(globalThis.__SISO_ROUTER_STATUS__?.children ?? {});
+                if (children.some((child) => child.status === "background" || child.status === "running" || child.status === "starting")) {
+                    publish(ctx, state, queueForSession(sessionId));
+                }
+                else if (children.length > 0) {
+                    publish(ctx, state, queueForSession(sessionId));
+                }
             }
         }, pollMs);
         poll.unref?.();
@@ -61,9 +165,10 @@ export default function sisoStatusExtension(pi) {
     pi.on("session_start", (event, ctx) => {
         const payload = event;
         ctx?.ui?.setHiddenThinkingLabel?.("");
+        const sessionId = explicitSessionId(ctx);
         installQueueEditor(ctx, {
-            queueCurrentEditor: (editor) => queueCurrentEditor(promptQueue, editor, ctx, publishWith),
-            queuedCount: () => promptQueue.length,
+            queueCurrentEditor: (editor) => sessionId ? queueCurrentEditor(queueForSession(sessionId), editor, ctx, publishWith) : true,
+            queuedCount: () => sessionId ? queueForSession(sessionId).length : 0,
         });
         if (typeof payload.skill === "string") {
             state.currentSkill = payload.skill;
@@ -116,30 +221,48 @@ export default function sisoStatusExtension(pi) {
             return result;
         },
     });
+    pi.registerCommand("siso-context-explain", {
+        description: "Explain the current provider input/context breakdown without dumping raw prompt text.",
+        handler: async (_args, ctx) => {
+            publishWith(ctx);
+            return textResult(formatContextExplain(state));
+        },
+    });
     pi.registerCommand("siso-queue", {
         description: "Queue a prompt for later. Use /siso-queue-pop to load the next queued prompt into the editor.",
         handler: async (args, ctx) => {
+            const sessionId = explicitSessionId(ctx);
+            if (!sessionId)
+                return textResult("current session required for prompt queue");
+            const promptQueue = queueForSession(sessionId);
             const text = args.join(" ").trim();
             if (!text)
                 return textResult(formatPromptQueue(promptQueue));
             const item = { id: `q-${Date.now().toString(36)}`, text, queuedAt: new Date().toISOString() };
             promptQueue.push(item);
             ctx?.ui?.notify?.(`Queued prompt ${promptQueue.length}`, "info");
-            publishWith(ctx ?? lastCtx);
+            publishWith(ctx);
             return textResult(`queued ${promptQueue.length}: ${truncate(text, 160)}\n\n${formatPromptQueue(promptQueue)}`);
         },
     });
     pi.registerCommand("siso-queue-list", {
         description: "List queued SISO prompts.",
-        handler: async () => textResult(formatPromptQueue(promptQueue)),
+        handler: async (_args, ctx) => {
+            const sessionId = explicitSessionId(ctx);
+            return textResult(sessionId ? formatPromptQueue(queueForSession(sessionId)) : "current session required for prompt queue");
+        },
     });
     pi.registerCommand("siso-queue-pop", {
         description: "Load the next queued prompt into the Pi editor without auto-running it.",
         handler: async (_args, ctx) => {
+            const sessionId = explicitSessionId(ctx);
+            if (!sessionId)
+                return textResult("current session required for queue pop");
+            const promptQueue = queueForSession(sessionId);
             const item = promptQueue.shift();
             if (!item)
                 return textResult("queue empty");
-            const targetCtx = ctx ?? lastCtx;
+            const targetCtx = ctx;
             targetCtx?.ui?.setEditorText?.(item.text);
             targetCtx?.ui?.notify?.("Loaded queued prompt into editor", "info");
             publishWith(targetCtx);
@@ -149,10 +272,51 @@ export default function sisoStatusExtension(pi) {
     pi.registerCommand("siso-queue-clear", {
         description: "Clear queued SISO prompts.",
         handler: async (_args, ctx) => {
+            const sessionId = explicitSessionId(ctx);
+            if (!sessionId)
+                return textResult("current session required for prompt queue");
+            const promptQueue = queueForSession(sessionId);
             const cleared = promptQueue.length;
             promptQueue.splice(0, promptQueue.length);
-            publishWith(ctx ?? lastCtx);
+            publishWith(ctx);
             return textResult(`cleared ${cleared} queued prompt${cleared === 1 ? "" : "s"}`);
+        },
+    });
+    pi.registerCommand("siso-bifrost-metrics", {
+        description: "Prints latest Bifrost prompt/tool section breakdown rows",
+        handler: async (args) => {
+            const limit = Number(args[0] ?? 3);
+            const result = {
+                content: [
+                    {
+                        type: "text",
+                        text: await readLatestMetricsTable(undefined, Number.isFinite(limit) ? limit : 3),
+                    },
+                ],
+            };
+            return result;
+        },
+    });
+    pi.registerCommand("siso-bifrost-dashboard", {
+        description: "Prints a compact dashboard summary of recent Bifrost prompt/tool telemetry",
+        handler: async (args) => {
+            const limit = Number(args[0] ?? 20);
+            const result = {
+                content: [
+                    {
+                        type: "text",
+                        text: await readLatestMetricsDashboard(undefined, Number.isFinite(limit) ? limit : 20),
+                    },
+                ],
+            };
+            return result;
+        },
+    });
+    pi.registerCommand("siso-bifrost-duplicates", {
+        description: "Prints near-duplicate Bifrost request groups from recent prompt/tool telemetry",
+        handler: async (args) => {
+            const limit = Number(args[0] ?? 50);
+            return textResult(await readDuplicateRequestReport(undefined, Number.isFinite(limit) ? limit : 50));
         },
     });
     if (process.env.SISO_STATUS_TOOL_MODE === "lean") {
@@ -161,13 +325,13 @@ export default function sisoStatusExtension(pi) {
     pi.registerTool?.({
         name: "siso_status",
         label: "SISO Status",
-        description: "Compact SISO observability surface. op=status returns local HUD state; op=metrics returns recent Bifrost rows; op=dashboard aggregates recent Bifrost telemetry.",
+        description: "Compact SISO observability surface. op=status returns local HUD state; op=context explains current context; op=metrics returns recent Bifrost rows; op=dashboard aggregates recent Bifrost telemetry.",
         parameters: {
             type: "object",
             properties: {
                 op: {
                     type: "string",
-                    enum: ["status", "metrics", "dashboard"],
+                    enum: ["status", "context", "metrics", "dashboard"],
                     description: "Defaults to status.",
                 },
                 limit: {
@@ -179,6 +343,11 @@ export default function sisoStatusExtension(pi) {
         },
         async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
             publishWith(ctx);
+            if (params.op === "context") {
+                return {
+                    content: [{ type: "text", text: formatContextExplain(state) }],
+                };
+            }
             if (params.op === "metrics") {
                 return {
                     content: [{ type: "text", text: await readLatestMetricsTable(undefined, typeof params.limit === "number" ? params.limit : 3) }],
@@ -194,21 +363,6 @@ export default function sisoStatusExtension(pi) {
                     {
                         type: "text",
                         text: emitStatus(),
-                    },
-                ],
-            };
-            return result;
-        },
-    });
-    pi.registerCommand("siso-bifrost-metrics", {
-        description: "Prints latest Bifrost prompt/tool section breakdown rows",
-        handler: async (args) => {
-            const limit = Number(args[0] ?? 3);
-            const result = {
-                content: [
-                    {
-                        type: "text",
-                        text: await readLatestMetricsTable(undefined, Number.isFinite(limit) ? limit : 3),
                     },
                 ],
             };
@@ -242,21 +396,6 @@ export default function sisoStatusExtension(pi) {
             return result;
         },
     });
-    pi.registerCommand("siso-bifrost-dashboard", {
-        description: "Prints a compact dashboard summary of recent Bifrost prompt/tool telemetry",
-        handler: async (args) => {
-            const limit = Number(args[0] ?? 20);
-            const result = {
-                content: [
-                    {
-                        type: "text",
-                        text: await readLatestMetricsDashboard(undefined, Number.isFinite(limit) ? limit : 20),
-                    },
-                ],
-            };
-            return result;
-        },
-    });
     pi.registerTool?.({
         name: "siso_bifrost_dashboard",
         label: "SISO Bifrost Dashboard",
@@ -282,6 +421,25 @@ export default function sisoStatusExtension(pi) {
                 ],
             };
             return result;
+        },
+    });
+    pi.registerTool?.({
+        name: "siso_bifrost_duplicates",
+        label: "SISO Bifrost Duplicates",
+        description: "Return near-duplicate Bifrost request groups with timestamps, coarse prompt shape, model, body size, dominant section, and SISO profile counts.",
+        parameters: {
+            type: "object",
+            properties: {
+                limit: {
+                    type: "number",
+                    description: "Number of latest rows to inspect. Defaults to 50.",
+                },
+            },
+            additionalProperties: false,
+        },
+        async execute(_toolCallId, params) {
+            const limit = typeof params.limit === "number" ? params.limit : 50;
+            return textResult(await readDuplicateRequestReport(undefined, limit));
         },
     });
 }
@@ -351,8 +509,13 @@ function ageSince(iso) {
     return `${Math.floor(minutes / 60)}h`;
 }
 function currentSessionId(ctx) {
-    const fromCtx = ctx && typeof ctx.sessionId === "string" ? ctx.sessionId : undefined;
-    return fromCtx ?? process.env.CLAUDE_SESSION_ID ?? process.env.SISO_PARENT_SESSION_ID ?? process.env.PI_SESSION_ID ?? process.env.SISO_SESSION_ID;
+    return explicitSessionId(ctx) ?? process.env.CLAUDE_SESSION_ID ?? process.env.SISO_PARENT_SESSION_ID ?? process.env.PI_SESSION_ID ?? process.env.SISO_SESSION_ID;
+}
+function explicitSessionId(ctx) {
+    const fromCtx = ctx && typeof ctx.sessionId === "string" && ctx.sessionId ? ctx.sessionId : undefined;
+    const sessionManager = ctx?.sessionManager && typeof ctx.sessionManager === "object" ? ctx.sessionManager : undefined;
+    const fromManager = typeof sessionManager?.currentSessionId === "string" && sessionManager.currentSessionId ? sessionManager.currentSessionId : undefined;
+    return fromCtx ?? fromManager;
 }
 function childRunDir() {
     return process.env.SISO_CHILD_RUN_DIR ?? join(homedir(), ".siso", "agent", "child-runs");
@@ -379,30 +542,45 @@ function refreshRouterChildrenFromDisk(limit = 30, ctx) {
     catch {
         return [];
     }
-    const current = currentSessionId(ctx);
+    const current = explicitSessionId(ctx);
     if (current) {
-        records = records.filter((record) => record.parentSessionId === current);
+        records = records.filter((record) => isRecordVisibleToScope(record, { parentSessionId: current }));
+    }
+    else if (process.env.SISO_STATUS_GLOBAL_HUD === "1" || process.env.SISO_STATUS_ADMIN_GLOBAL === "1") {
+        records = records.filter((record) => isActiveRecordStatus(record.status) && isLiveChildProcess(record.pid));
+    }
+    else {
+        records = [];
     }
     if (records.length === 0) {
         globalThis.__SISO_ROUTER_STATUS__ = {
             ...globalThis.__SISO_ROUTER_STATUS__,
             children: {},
             child: undefined,
+            activeChildId: undefined,
             updatedAt: new Date().toISOString(),
         };
         return [];
     }
     const refreshed = records.map(refreshRecordFromExit);
+    for (const record of refreshed)
+        writeSessionAgent(record);
     const children = Object.fromEntries(refreshed.map((record) => {
         return [record.id, {
                 id: record.id,
                 status: record.status,
+                task: record.task,
                 profile: record.profile,
                 lane: record.lane,
                 model: record.model,
                 startedAt: record.startedAt,
                 updatedAt: record.updatedAt,
                 pid: record.pid,
+                rootSessionId: record.rootSessionId,
+                parentSessionId: record.parentSessionId,
+                ownerAgentId: record.ownerAgentId,
+                spawnedByTaskId: record.spawnedByTaskId,
+                depth: record.depth,
                 exitCode: record.exitCode,
                 tokens: record.tokens,
                 toolCalls: record.toolCalls,
@@ -415,6 +593,7 @@ function refreshRouterChildrenFromDisk(limit = 30, ctx) {
         ...globalThis.__SISO_ROUTER_STATUS__,
         children,
         child: Object.values(children)[0],
+        activeChildId: Object.values(children)[0]?.id,
         updatedAt: new Date().toISOString(),
     };
     return refreshed;
@@ -430,33 +609,126 @@ function readExit(path) {
     }
 }
 function refreshRecordFromExit(record) {
-    if (record.status !== "background")
+    if (record.status === "background") {
+        const exit = readExit(record.exitPath);
+        const stdoutOffset = record.progress?.stdoutOffset ?? 0;
+        const stdout = exit ? { text: readText(record.stdoutPath), nextOffset: undefined } : readTextDelta(record.stdoutPath, stdoutOffset);
+        const parsed = parseChildOutput(stdout.text);
+        const stderr = readText(record.stderrPath);
+        if (exit) {
+            const hasCapturedChildResult = Boolean(parsed.finalOutput.trim()) || parsed.tokens.totalTokens > 0 || parsed.toolCalls > 0;
+            const supervisorOnly = !hasCapturedChildResult && !stderr.trim() && (record.compactResult?.summary ?? "").startsWith("background child supervisor started");
+            const completed = exit.exitCode === 0 && !exit.error && !supervisorOnly;
+            const error = supervisorOnly ? "Background child exited without captured output." : exit.error ?? stderr ?? record.error;
+            const next = {
+                ...record,
+                status: completed ? "completed" : "failed",
+                updatedAt: exit.completedAt ?? new Date().toISOString(),
+                exitCode: exit.exitCode ?? record.exitCode,
+                tokens: parsed.tokens.totalTokens > 0 ? parsed.tokens : record.tokens,
+                toolCalls: parsed.toolCalls || record.toolCalls,
+                compactResult: compactChildResult(parsed.finalOutput || stderr || error || record.compactResult?.summary || ""),
+                error: completed ? record.error : error,
+            };
+            writeChildRecord(next);
+            return next;
+        }
+        const nextTokens = parsed.tokens.totalTokens > 0 ? parsed.tokens : record.tokens;
+        const nextToolCalls = (record.toolCalls ?? 0) + parsed.toolCalls;
+        const nextCompactResult = parsed.finalOutput.trim() ? compactChildResult(parsed.finalOutput) : record.compactResult;
+        const changed = (nextTokens?.totalTokens ?? 0) !== (record.tokens?.totalTokens ?? 0) ||
+            (nextToolCalls ?? 0) !== (record.toolCalls ?? 0) ||
+            (nextCompactResult?.summary ?? "") !== (record.compactResult?.summary ?? "") ||
+            stdout.nextOffset !== stdoutOffset;
+        if (changed) {
+            const next = {
+                ...record,
+                updatedAt: new Date().toISOString(),
+                tokens: nextTokens,
+                toolCalls: nextToolCalls,
+                compactResult: nextCompactResult,
+                progress: {
+                    ...(record.progress ?? {}),
+                    stdoutOffset: stdout.nextOffset ?? stdoutOffset,
+                },
+            };
+            const governed = enforceBudgetForRecord(next);
+            if (governed === next)
+                writeChildRecord(next);
+            return governed;
+        }
+        return enforceBudgetForRecord(record);
+    }
+    if (isActiveRecordStatus(record.status) && record.pid && !isLiveChildProcess(record.pid)) {
+        const next = {
+            ...record,
+            status: "aborted",
+            updatedAt: new Date().toISOString(),
+            error: record.error ?? "Child process is no longer running.",
+            compactResult: record.compactResult?.summary
+                ? record.compactResult
+                : compactChildResult("Child process is no longer running."),
+        };
+        writeChildRecord(next);
+        return next;
+    }
+    return record;
+}
+function enforceBudgetForRecord(record) {
+    if (!isActiveRecordStatus(record.status))
         return record;
-    const exit = readExit(record.exitPath);
-    if (!exit)
+    const budget = taskBudgetState(record);
+    if (!budget.exceededAny)
         return record;
-    const parsed = parseChildOutput(readText(record.stdoutPath));
-    const stderr = readText(record.stderrPath);
-    const hasCapturedChildResult = Boolean(parsed.finalOutput.trim()) || parsed.tokens.totalTokens > 0 || parsed.toolCalls > 0;
-    const supervisorOnly = !hasCapturedChildResult && !stderr.trim() && (record.compactResult?.summary ?? "").startsWith("background child supervisor started");
-    const completed = exit.exitCode === 0 && !exit.error && !supervisorOnly;
-    const error = supervisorOnly ? "Background child exited without captured output." : exit.error ?? stderr ?? record.error;
+    signalChildTree(record.pid, "SIGTERM");
     const next = {
         ...record,
-        status: completed ? "completed" : "failed",
-        updatedAt: exit.completedAt ?? new Date().toISOString(),
-        exitCode: exit.exitCode ?? record.exitCode,
-        tokens: parsed.tokens.totalTokens > 0 ? parsed.tokens : record.tokens,
-        toolCalls: parsed.toolCalls || record.toolCalls,
-        compactResult: compactChildResult(parsed.finalOutput || stderr || error || record.compactResult?.summary || ""),
-        error: completed ? record.error : error,
+        status: "aborted",
+        updatedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        error: budget.reason,
+        compactResult: compactChildResult(budget.reason),
+        budget: budget.budget,
+        budgetEnforcedAt: new Date().toISOString(),
     };
+    writeChildRecord(next);
+    return next;
+}
+function writeChildRecord(record) {
     try {
-        if (record.runRecordPath)
-            writeFileSync(record.runRecordPath, `${JSON.stringify(next, null, 2)}\n`);
+        if (record.runRecordPath) {
+            writeFileSync(record.runRecordPath, `${JSON.stringify(record, null, 2)}\n`);
+            writeScopedTaskRecord(record);
+        }
     }
     catch { }
-    return next;
+}
+function signalChildTree(pid, signal) {
+    if (!isLiveChildProcess(pid))
+        return;
+    try {
+        process.kill(-pid, signal);
+    }
+    catch {
+        try {
+            process.kill(pid, signal);
+        }
+        catch { }
+    }
+}
+function isActiveRecordStatus(status) {
+    return status === "starting" || status === "running" || status === "background";
+}
+function isLiveChildProcess(pid) {
+    if (typeof pid !== "number" || !Number.isFinite(pid) || pid <= 0)
+        return false;
+    try {
+        process.kill(pid, 0);
+        return true;
+    }
+    catch {
+        return false;
+    }
 }
 function completionInjectionMode() {
     const mode = process.env.SISO_AGENT_COMPLETION_INJECT;
@@ -476,8 +748,12 @@ function notifyCompletedChildren(pi, records, notified) {
         const notification = {
             id: record.id,
             status: record.status,
+            task: record.task,
             profile: record.profile,
             model: record.model,
+            startedAt: record.startedAt,
+            completedAt: record.completedAt ?? record.updatedAt,
+            durationMs: record.durationMs,
             runRecordPath: record.runRecordPath,
             compactResult: record.compactResult,
             error: record.error,
@@ -508,6 +784,33 @@ function readText(path) {
     }
     catch {
         return "";
+    }
+}
+function readTextDelta(path, offset = 0) {
+    if (!path)
+        return { text: "", nextOffset: offset };
+    let fd;
+    try {
+        const size = statSync(path).size;
+        const start = Math.max(0, Math.min(offset, size));
+        const length = size - start;
+        if (length <= 0)
+            return { text: "", nextOffset: size };
+        fd = openSync(path, "r");
+        const buffer = Buffer.alloc(length);
+        readSync(fd, buffer, 0, length, start);
+        return { text: buffer.toString("utf8"), nextOffset: size };
+    }
+    catch {
+        return { text: "", nextOffset: offset };
+    }
+    finally {
+        if (fd !== undefined) {
+            try {
+                closeSync(fd);
+            }
+            catch { }
+        }
     }
 }
 function parseChildOutput(text) {
@@ -599,12 +902,15 @@ function renderChildRunCard(record, expanded, theme) {
     const glyph = childGlyph(record.status);
     const color = childColor(record.status);
     const status = theme.fg(color, glyph);
-    const title = theme.bold(`agent ${record.status}`);
+    const title = theme.bold(`Agent ${childStatusWord(record.status)}`);
+    const role = compactAgentRole(record.profile);
+    const checks = `${record.toolCalls ?? 0} check${record.toolCalls === 1 ? "" : "s"}`;
+    const duration = childDuration(record);
     const meta = [
-        record.profile,
-        displayModel(record.model),
-        record.tokens?.totalTokens ? `${formatTokens(record.tokens.totalTokens)}t` : undefined,
-        record.toolCalls ? `${record.toolCalls} calls` : undefined,
+        role,
+        record.toolCalls ? checks : undefined,
+        duration,
+        record.tokens?.totalTokens ? `${formatTokens(record.tokens.totalTokens)} tok` : undefined,
     ].filter(Boolean).join(` ${theme.fg("dim", "·")} `);
     const summary = truncate(record.compactResult?.summary ?? record.error ?? "Child finished without a summary.", 140);
     let text = [
@@ -626,7 +932,7 @@ function renderChildRunCard(record, expanded, theme) {
 }
 function childGlyph(status) {
     if (status === "completed")
-        return "●";
+        return "✓";
     if (status === "running" || status === "starting" || status === "background")
         return "◐";
     if (status === "cancelled" || status === "aborted")
@@ -634,6 +940,34 @@ function childGlyph(status) {
     if (status === "failed" || status === "error" || status === "timeout")
         return "×";
     return "○";
+}
+function childStatusWord(status) {
+    if (status === "completed")
+        return "complete";
+    if (status === "running" || status === "background")
+        return "running";
+    if (status === "starting")
+        return "starting";
+    return status ?? "status";
+}
+function compactAgentRole(profile) {
+    const value = String(profile ?? "").split(".").filter(Boolean).at(-1);
+    return value || "agent";
+}
+function childDuration(record) {
+    if (record.durationMs && Number.isFinite(record.durationMs))
+        return formatClockDuration(record.durationMs);
+    const start = Date.parse(record.startedAt ?? "");
+    const end = Date.parse(record.completedAt ?? record.updatedAt ?? "");
+    if (Number.isFinite(start) && Number.isFinite(end) && end >= start)
+        return formatClockDuration(end - start);
+    return undefined;
+}
+function formatClockDuration(ms) {
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 function childColor(status) {
     if (status === "completed")
