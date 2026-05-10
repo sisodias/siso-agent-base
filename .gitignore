@@ -14,6 +14,7 @@ models.json
 .siso/agents/_runtime/
 .siso/repo-index/
 .siso/reports/
+.siso/flight-runs/
 .siso/tool-telemetry.jsonl
 
 # Generated local artifacts
