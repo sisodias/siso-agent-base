@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "runId": "context-filter-2026-05-09T17-45-47-967Z",
+  "task": "Record context filtering as flight-recorder evidence.",
+  "startedAt": "2026-05-09T17:45:47.967Z",
+  "completedAt": "2026-05-09T17:45:49.582Z",
+  "agent": {
+    "profile": "local-context",
+    "model": "none"
+  },
+  "links": {
+    "capabilityIds": [
+      "flight-recorder",
+      "context-filtering",
+      "context-memory-tools"
+    ],
+    "contractIds": [
+      "context-safety"
+    ],
+    "benchmarkSuiteIds": [
+      "context-efficiency"
+    ],
+    "testSpaceSuites": [
+      "context-tools",
+      "flight-recorder"
+    ]
+  },
+  "events": [
+    {
+      "at": "2026-05-09T17:45:47.967Z",
+      "type": "run.started",
+      "summary": "Context filter flight recording started."
+    },
+    {
+      "at": "2026-05-09T17:45:47.967Z",
+      "type": "contract.matched",
+      "contractId": "context-safety",
+      "requiredCommands": [
+        "npm run smoke:context",
+        "npm run smoke:context-details",
+        "npm run smoke:context-explain",
+        "npm run smoke:context-tier"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:45:47.969Z",
+      "type": "context.filtered",
+      "summary": "Filtered provider payload for context flight sample.",
+      "beforeChars": 0,
+      "afterChars": 0,
+      "estimatedSavedTokens": 0
+    },
+    {
+      "at": "2026-05-09T17:45:47.969Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:context"
+    },
+    {
+      "at": "2026-05-09T17:45:48.107Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 138,
+      "summary": "npm run smoke:context"
+    },
+    {
+      "at": "2026-05-09T17:45:48.107Z",
+      "type": "command.validation",
+      "command": "npm run smoke:context",
+      "status": "passed",
+      "durationMs": 138
+    },
+    {
+      "at": "2026-05-09T17:45:48.107Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:context-details"
+    },
+    {
+      "at": "2026-05-09T17:45:48.329Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 222,
+      "summary": "npm run smoke:context-details"
+    },
+    {
+      "at": "2026-05-09T17:45:48.329Z",
+      "type": "command.validation",
+      "command": "npm run smoke:context-details",
+      "status": "passed",
+      "durationMs": 222
+    },
+    {
+      "at": "2026-05-09T17:45:48.329Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:context-explain"
+    },
+    {
+      "at": "2026-05-09T17:45:49.458Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 1129,
+      "summary": "npm run smoke:context-explain"
+    },
+    {
+      "at": "2026-05-09T17:45:49.458Z",
+      "type": "command.validation",
+      "command": "npm run smoke:context-explain",
+      "status": "passed",
+      "durationMs": 1129
+    },
+    {
+      "at": "2026-05-09T17:45:49.458Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:context-tier"
+    },
+    {
+      "at": "2026-05-09T17:45:49.582Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 124,
+      "summary": "npm run smoke:context-tier"
+    },
+    {
+      "at": "2026-05-09T17:45:49.582Z",
+      "type": "command.validation",
+      "command": "npm run smoke:context-tier",
+      "status": "passed",
+      "durationMs": 124
+    },
+    {
+      "type": "scorecard.updated",
+      "at": "2026-05-09T17:45:49.582Z",
+      "summary": "Estimated saved tokens from recorded context filtering: 0."
+    },
+    {
+      "type": "run.completed",
+      "at": "2026-05-09T17:45:49.582Z",
+      "status": "completed"
+    }
+  ],
+  "metrics": {
+    "toolCalls": 4,
+    "failedToolCalls": 0,
+    "filesRead": 0,
+    "filesChanged": 1,
+    "validationsRun": 4,
+    "validationsPassed": 4,
+    "childAgents": 0,
+    "contextFilteredEvents": 1,
+    "durationMs": 1615
+  },
+  "scorecard": {
+    "taskAchievement": 88,
+    "toolEfficiency": 84,
+    "contextEfficiency": 60,
+    "codeIntelligence": 50,
+    "delegation": 100,
+    "skillUsage": 50,
+    "safetyGovernance": 88,
+    "memoryImproveability": 80,
+    "operatorExperience": 80,
+    "overall": 79
+  },
+  "artifacts": [],
+  "risks": []
+}

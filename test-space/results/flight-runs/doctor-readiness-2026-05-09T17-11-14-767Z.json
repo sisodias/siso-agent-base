@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "runId": "doctor-readiness-2026-05-09T17-11-14-767Z",
+  "task": "Record doctor readiness checks as a flight-recorder trace.",
+  "startedAt": "2026-05-09T17:11:14.767Z",
+  "completedAt": "2026-05-09T17:11:16.522Z",
+  "agent": {
+    "profile": "local-doctor",
+    "model": "none"
+  },
+  "links": {
+    "capabilityIds": [
+      "flight-recorder",
+      "doctor-readiness",
+      "source-drift-detector",
+      "agent-contracts",
+      "capability-registry",
+      "test-space"
+    ],
+    "contractIds": [
+      "install-runtime",
+      "capability-registry",
+      "test-space"
+    ],
+    "benchmarkSuiteIds": [
+      "foundation-readiness"
+    ],
+    "testSpaceSuites": [
+      "flight-recorder",
+      "doctor-readiness",
+      "source-drift",
+      "agent-contracts",
+      "test-space-structure"
+    ]
+  },
+  "events": [
+    {
+      "at": "2026-05-09T17:11:14.767Z",
+      "type": "run.started",
+      "summary": "Doctor readiness flight recording started."
+    },
+    {
+      "at": "2026-05-09T17:11:14.769Z",
+      "type": "contract.matched",
+      "contractId": "install-runtime",
+      "requiredCommands": [
+        "npm run smoke:source-drift",
+        "npm run smoke:doctor-readiness"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:11:14.769Z",
+      "type": "contract.matched",
+      "contractId": "capability-registry",
+      "requiredCommands": [
+        "npm run smoke:capabilities",
+        "npm run smoke:contracts"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:11:14.769Z",
+      "type": "contract.matched",
+      "contractId": "test-space",
+      "requiredCommands": [
+        "npm run smoke:test-space",
+        "npm run smoke:test-space-coverage"
+      ]
+    },
+    {
+      "at": "2026-05-09T17:11:14.770Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:source-drift"
+    },
+    {
+      "at": "2026-05-09T17:11:15.127Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 357,
+      "summary": "npm run smoke:source-drift"
+    },
+    {
+      "at": "2026-05-09T17:11:15.127Z",
+      "type": "command.validation",
+      "command": "npm run smoke:source-drift",
+      "status": "passed",
+      "durationMs": 357
+    },
+    {
+      "at": "2026-05-09T17:11:15.128Z",
+      "type": "drift.detected",
+      "category": "install-runtime",
+      "severity": "warning",
+      "summary": "Installed runtime differs from workspace."
+    },
+    {
+      "at": "2026-05-09T17:11:15.128Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "node scripts/smoke-contracts.mjs --changed"
+    },
+    {
+      "at": "2026-05-09T17:11:15.650Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 522,
+      "summary": "node scripts/smoke-contracts.mjs --changed"
+    },
+    {
+      "at": "2026-05-09T17:11:15.650Z",
+      "type": "command.validation",
+      "command": "node scripts/smoke-contracts.mjs --changed",
+      "status": "passed",
+      "durationMs": 522
+    },
+    {
+      "at": "2026-05-09T17:11:15.650Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:capabilities"
+    },
+    {
+      "at": "2026-05-09T17:11:15.920Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 270,
+      "summary": "npm run smoke:capabilities"
+    },
+    {
+      "at": "2026-05-09T17:11:15.920Z",
+      "type": "command.validation",
+      "command": "npm run smoke:capabilities",
+      "status": "passed",
+      "durationMs": 270
+    },
+    {
+      "at": "2026-05-09T17:11:15.920Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:test-space"
+    },
+    {
+      "at": "2026-05-09T17:11:16.233Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 313,
+      "summary": "npm run smoke:test-space"
+    },
+    {
+      "at": "2026-05-09T17:11:16.233Z",
+      "type": "command.validation",
+      "command": "npm run smoke:test-space",
+      "status": "passed",
+      "durationMs": 313
+    },
+    {
+      "at": "2026-05-09T17:11:16.233Z",
+      "type": "tool.started",
+      "tool": "node",
+      "summary": "npm run smoke:test-space-coverage"
+    },
+    {
+      "at": "2026-05-09T17:11:16.522Z",
+      "type": "tool.completed",
+      "tool": "node",
+      "exitCode": 0,
+      "durationMs": 289,
+      "summary": "npm run smoke:test-space-coverage"
+    },
+    {
+      "at": "2026-05-09T17:11:16.522Z",
+      "type": "command.validation",
+      "command": "npm run smoke:test-space-coverage",
+      "status": "passed",
+      "durationMs": 289
+    },
+    {
+      "type": "scorecard.updated",
+      "at": "2026-05-09T17:11:16.523Z",
+      "summary": "Computed readiness flight scorecard from validation events."
+    },
+    {
+      "type": "run.completed",
+      "at": "2026-05-09T17:11:16.522Z",
+      "status": "completed"
+    }
+  ],
+  "metrics": {
+    "toolCalls": 5,
+    "failedToolCalls": 0,
+    "filesRead": 0,
+    "filesChanged": 1,
+    "validationsRun": 5,
+    "validationsPassed": 5,
+    "childAgents": 0,
+    "contextFilteredEvents": 0,
+    "durationMs": 1755
+  },
+  "scorecard": {
+    "taskAchievement": 90,
+    "toolEfficiency": 85,
+    "contextEfficiency": 80,
+    "codeIntelligence": 50,
+    "delegation": 100,
+    "skillUsage": 50,
+    "safetyGovernance": 90,
+    "memoryImproveability": 75,
+    "operatorExperience": 85,
+    "overall": 78
+  },
+  "artifacts": [
+    "test-space/results/source-drift-report.json",
+    "test-space/results/contracts-report.json",
+    "test-space/results/coverage-summary.json"
+  ],
+  "risks": [
+    {
+      "id": "source-drift-0",
+      "severity": "warning",
+      "summary": "installed package version 0.1.97 != workspace 0.1.98"
+    },
+    {
+      "id": "source-drift-1",
+      "severity": "warning",
+      "summary": "installed VERSION 0.1.97 != workspace 0.1.98"
+    },
+    {
+      "id": "source-drift-2",
+      "severity": "warning",
+      "summary": "installed package.json differs from workspace"
+    },
+    {
+      "id": "source-drift-3",
+      "severity": "warning",
+      "summary": "installed VERSION differs from workspace"
+    },
+    {
+      "id": "source-drift-4",
+      "severity": "warning",
+      "summary": "installed releases/latest.json differs from workspace"
+    }
+  ]
+}

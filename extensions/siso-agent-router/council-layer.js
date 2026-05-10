@@ -4,13 +4,26 @@ import { executeSpawnWithNativeSubagentBridge } from "./native-subagent-bridge.j
 const DEFAULT_MEMBERS = ["minimax.scout", "minimax.verifier", "gpt54mini.scout"];
 const REVIEW_MEMBERS = ["minimax.scout", "minimax.verifier", "spark.reviewer"];
 const SYNTHESIS_MEMBER = "gpt55.oracle";
+const PROFILE_ALIASES = {
+    architect: "gpt55.planner",
+    planner: "gpt55.planner",
+    oracle: "gpt55.oracle",
+    reviewer: "spark.reviewer",
+    scout: "minimax.scout",
+    verifier: "minimax.verifier",
+    worker: "minimax.worker",
+};
+function normalizeProfileId(profileId) {
+    return PROFILE_ALIASES[profileId] ?? profileId;
+}
 function routeKind(role) {
     if (role === "rescue")
         return "rescue";
     return role;
 }
 export function decisionForProfile(profileId, rationale = "Council member selected by SISO profile registry.") {
-    const profile = PROFILE_REGISTRY[profileId];
+    const normalizedProfileId = normalizeProfileId(profileId);
+    const profile = PROFILE_REGISTRY[normalizedProfileId];
     if (!profile)
         throw new Error(`Unknown SISO council profile: ${profileId}`);
     return {
@@ -30,7 +43,7 @@ export function decisionForProfile(profileId, rationale = "Council member select
 }
 function profilesFor(mode, members, maxMembers) {
     const selected = members?.length ? members : mode === "review" ? REVIEW_MEMBERS : DEFAULT_MEMBERS;
-    return [...new Set(selected)].slice(0, Math.max(1, maxMembers));
+    return [...new Set(selected.map(normalizeProfileId))].slice(0, Math.max(1, maxMembers));
 }
 function memberPrompt(task, mode, profile, rubric) {
     return [
@@ -87,7 +100,7 @@ export async function runCouncil(task, options = {}, signal) {
             tokens: result.tokens,
             result: result.compactResult,
             ...(result.runRecordPath ? { recordPath: result.runRecordPath } : {}),
-            ...(result.events ? { events: result.events } : {}),
+            ...(typeof result.eventCount === "number" ? { eventCount: result.eventCount } : {}),
         };
     }));
     const members = mode === "synthesize" && !options.dryRun
@@ -100,7 +113,7 @@ export async function runCouncil(task, options = {}, signal) {
         members,
         synthesis: synthesisFromMembers(task, members),
         totalTokens: members.reduce((sum, member) => sum + member.tokens.totalTokens, 0),
-        events: members.flatMap((member) => member.events ?? []),
+        eventCount: members.reduce((sum, member) => sum + (member.eventCount ?? 0), 0),
     };
 }
 async function runSynthesisMember(task, members, options, signal) {
@@ -133,13 +146,14 @@ async function runSynthesisMember(task, members, options, signal) {
         tokens: result.tokens,
         result: result.compactResult,
         ...(result.runRecordPath ? { recordPath: result.runRecordPath } : {}),
-        ...(result.events ? { events: result.events } : {}),
+        ...(typeof result.eventCount === "number" ? { eventCount: result.eventCount } : {}),
     };
 }
 async function runCouncilMemberViaNativeBridge(task, decision, options, signal) {
-    if (options.dryRun || process.env.SISO_COUNCIL_RUNTIME !== "native-pi-process") {
+    if (options.dryRun || process.env.SISO_COUNCIL_RUNTIME === "legacy") {
         return publicSpawnResult(await runProfileSpawn(task, {
             ...(options.cwd ? { cwd: options.cwd } : {}),
+            ...(options.ctx ? { ctx: options.ctx } : {}),
             ...(typeof options.timeoutMs === "number" ? { timeoutMs: options.timeoutMs } : {}),
             ...(typeof options.dryRun === "boolean" ? { dryRun: options.dryRun } : {}),
             ...(typeof options.noTools === "boolean" ? { noTools: options.noTools } : {}),
@@ -149,6 +163,7 @@ async function runCouncilMemberViaNativeBridge(task, decision, options, signal) 
     const bridged = await executeSpawnWithNativeSubagentBridge({
         task,
         cwd: options.cwd,
+        ctx: options.ctx,
         timeoutMs: options.timeoutMs,
         background: false,
         noTools: options.noTools,
@@ -156,15 +171,19 @@ async function runCouncilMemberViaNativeBridge(task, decision, options, signal) 
         signal,
     });
     const details = bridged.details && typeof bridged.details === "object" ? bridged.details : {};
-    const native = details.native && typeof details.native === "object" ? details.native : {};
-    const text = bridged.content.map((item) => item.text).join("\n");
-    const compactResult = compactChildResult(text);
-    const tokens = tokensFromNative(native);
+    const compactResult = details.compactResult && typeof details.compactResult === "object"
+        ? details.compactResult
+        : compactChildResult(bridged.content.map((item) => item.text).join("\n"));
+    const tokens = details.tokens && typeof details.tokens === "object" ? tokensFromUsage(details.tokens) : { input: 0, output: 0, totalTokens: 0 };
     return {
-        id: typeof native.id === "string" ? native.id : `native-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        status: nativeStatus(native),
+        id: typeof details.id === "string" ? details.id : `native-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        status: nativeStatus(details),
         tokens,
         compactResult,
+        adapter: details.adapter === "native-subagent" ? "native-subagent" : undefined,
+        toolCalls: typeof details.toolCalls === "number" ? details.toolCalls : 0,
+        durationMs: typeof details.durationMs === "number" ? details.durationMs : undefined,
+        eventCount: typeof details.eventCount === "number" ? details.eventCount : 0,
     };
 }
 function nativeStatus(native) {

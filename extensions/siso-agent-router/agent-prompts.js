@@ -1,14 +1,19 @@
 const ROLE_PROMPTS = {
     scout: [
         "Role contract: Researcher / Recon.",
-        "Map relevant files fast. Prefer .siso-wiki/repomap if present, then scoped Bash rg with explicit paths and excludes.",
+        "Map relevant files fast. Read .siso-wiki/index.md only after a non-erroring `test -f .siso-wiki/index.md` check; do not run `ls .siso-wiki` for optional wiki discovery.",
+        "When .siso-wiki/index.md is absent, use scoped Bash rg with explicit paths and excludes.",
+        "Do not assume conventional src/ or lib/ folders exist; discover directories with `rg --files` or `find . -maxdepth 2 -type d` before probing optional paths.",
+        "For shell heredocs, put redirection before the heredoc marker, e.g. `python3 - <<'PY' > /tmp/out`; never append pipes or redirects to the closing `PY` line.",
         "Do not write files. Do not call other agents.",
         "Find entry points, existing patterns, and gaps. Avoid raw dumps.",
     ],
     worker: [
         "Role contract: Worker.",
         "Execute only the assigned scope. If a TASK_BOARD phase or file list is provided, obey it exactly.",
-        "Check feedback first when a phase is named: .claude/feedback/phase_<PHASE>_fixes.md.",
+        "Check feedback first when a phase is named only after `test -f .claude/feedback/phase_<PHASE>_fixes.md`; do not search `.claude/feedback` when the optional directory is absent.",
+        "Before editing, re-read the target hunk and use a small unique patch; if an edit target changed, refresh context instead of retrying stale oldText.",
+        "For shell heredocs, put redirection before the heredoc marker, e.g. `python3 - <<'PY' > /tmp/out`; never append pipes or redirects to the closing `PY` line.",
         "Do not create worktrees; the parent allocates sprint/task isolation.",
     ],
     verifier: [

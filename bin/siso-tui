@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CANDIDATES=(
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}/apps/siso-tui/src/main.tsx"
+  "$SELF_DIR/../apps/siso-tui/src/main.tsx"
+  "$PWD/apps/siso-tui/src/main.tsx"
+)
+ROOTS=(
+  "${SISO_AGENT_BASE_DIR:-$HOME/.siso-agent-base}"
+  "$SELF_DIR/.."
+  "$PWD"
+)
+
+SCRIPT=""
+ROOT=""
+for i in "${!CANDIDATES[@]}"; do
+  candidate="${CANDIDATES[$i]}"
+  if [[ -f "$candidate" ]]; then
+    SCRIPT="$candidate"
+    ROOT="${ROOTS[$i]}"
+    break
+  fi
+done
+
+if [[ -z "$SCRIPT" ]]; then
+  echo "Unable to find SISO TUI entrypoint" >&2
+  printf 'Checked:\n%s\n' "${CANDIDATES[@]}" >&2
+  exit 1
+fi
+
+export SISO_TUI_CWD="${SISO_TUI_CWD:-$PWD}"
+cd "$ROOT"
+
+if command -v bun >/dev/null 2>&1; then
+  exec bun "$SCRIPT" "$@"
+fi
+
+echo "SISO TUI requires bun for the OpenTUI runtime. Install bun or run plain 'siso'." >&2
+exit 1

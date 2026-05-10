@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "benchmarks": [
+    {
+      "id": "swe-bench-verified",
+      "name": "SWE-bench Verified",
+      "category": "coding-patch",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["issue understanding", "repo navigation", "patch correctness", "test relevance"],
+      "sisoUse": "Use small subsets to measure harness effect on real repo bugfix tasks.",
+      "localMetricsToExtract": ["taskAchievement", "filesRead", "toolCalls", "testsRun", "patchPassRate"]
+    },
+    {
+      "id": "terminal-bench",
+      "name": "Terminal-Bench",
+      "category": "terminal-task-execution",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["terminal competence", "long-horizon task execution", "environment handling"],
+      "sisoUse": "Measure run_check, shell/tool discipline, recovery, and operator-readiness behavior.",
+      "localMetricsToExtract": ["commandSuccessRate", "failedCommands", "timeToCompletion", "recoveryFromFailure"]
+    },
+    {
+      "id": "agentbench",
+      "name": "AgentBench",
+      "category": "broad-agent-eval",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["multi-domain agent performance", "reasoning", "tool usage"],
+      "sisoUse": "Mine task taxonomy and scoring ideas, not necessarily direct adoption.",
+      "localMetricsToExtract": ["taskAchievement", "toolEfficiency", "planningQuality"]
+    },
+    {
+      "id": "toolbench-apibench",
+      "name": "ToolBench / APIBench-style evals",
+      "category": "tool-use",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["tool selection", "API argument correctness", "multi-step tool chains"],
+      "sisoUse": "Benchmark native tool choice versus shell fallback; score schema/argument quality.",
+      "localMetricsToExtract": ["correctToolSelection", "argumentValidity", "wastedToolCalls", "toolChainSuccess"]
+    },
+    {
+      "id": "webarena-workarena",
+      "name": "WebArena / WorkArena",
+      "category": "workflow-execution",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["web workflow completion", "stateful tasks", "business process execution"],
+      "sisoUse": "Borrow long-horizon workflow scoring and operator-experience ideas.",
+      "localMetricsToExtract": ["workflowCompletion", "stateTracking", "humanInterventionRequired"]
+    },
+    {
+      "id": "tau-bench",
+      "name": "τ-bench / tau-bench",
+      "category": "tool-agent-reliability",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["policy following", "tool reliability", "simulated user interactions"],
+      "sisoUse": "Adapt for contract compliance, policy following, and tool reliability under stateful tasks.",
+      "localMetricsToExtract": ["contractCompliance", "policyViolations", "toolReliability"]
+    },
+    {
+      "id": "browsecomp-ir",
+      "name": "BrowseComp / hard retrieval evals",
+      "category": "information-retrieval",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["hard evidence retrieval", "needle finding", "source synthesis"],
+      "sisoUse": "Adapt for repo evidence finding, citations, and code intelligence precision.",
+      "localMetricsToExtract": ["searchPrecision", "evidenceQuality", "citations", "timeToEvidence"]
+    },
+    {
+      "id": "sourcegraph-cody-context",
+      "name": "Sourcegraph/Cody-style code intelligence",
+      "category": "code-intelligence",
+      "researchStatus": "todo-web-research",
+      "whatItMeasures": ["code search", "symbol/navigation", "context retrieval", "repo understanding"],
+      "sisoUse": "Compare against SISO repoSearch/readMany/contextPack/briefRepo evolution.",
+      "localMetricsToExtract": ["filesToRelevant", "contextPackCompleteness", "symbolRecall", "architectureMapUsefulness"]
+    },
+    {
+      "id": "openhands-opencode-continue",
+      "name": "OpenHands / OpenCode / Continue / similar OSS agents",
+      "category": "agent-harness-design",
+      "researchStatus": "todo-github-research",
+      "whatItMeasures": ["agent loop design", "tool design", "workspace handling", "evaluation style"],
+      "sisoUse": "Mine harness features and eval methods; implement SISO-native versions only.",
+      "localMetricsToExtract": ["toolCoverage", "loopReliability", "editDiscipline", "validationDiscipline"]
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "metricCategories": [
+    "task-achievement",
+    "tool-efficiency",
+    "token-context-efficiency",
+    "code-intelligence",
+    "delegation",
+    "skill-usage",
+    "safety-governance",
+    "memory-improveability",
+    "operator-experience"
+  ],
+  "externalResearchTargets": [
+    "SWE-bench",
+    "SWE-bench Verified",
+    "Terminal-Bench",
+    "AgentBench",
+    "ToolBench/APIBench",
+    "WebArena/WorkArena",
+    "tau-bench",
+    "BrowseComp",
+    "OpenHands/OpenCode/Continue/Cursor/Windsurf/Sourcegraph public agent docs"
+  ],
+  "suites": [
+    {
+      "id": "foundation-readiness",
+      "name": "Foundation Readiness",
+      "category": "safety-governance",
+      "status": "active",
+      "taskFile": "tasks/foundation-readiness.md",
+      "commands": [
+        "bin/siso-doctor readiness"
+      ],
+      "metrics": [
+        "contractCompliance",
+        "driftErrors",
+        "coverageUntested",
+        "operatorClarity"
+      ]
+    },
+    {
+      "id": "code-intel-navigation",
+      "name": "Code Intelligence Navigation",
+      "category": "code-intelligence",
+      "status": "active",
+      "taskFile": "tasks/code-intel-navigation.md",
+      "commands": [
+        "npm run smoke:agent-tooling"
+      ],
+      "metrics": [
+        "filesToRelevant",
+        "toolCallsToBrief",
+        "contextPackCompleteness",
+        "searchPrecision"
+      ]
+    },
+    {
+      "id": "context-efficiency",
+      "name": "Context Efficiency",
+      "category": "token-context-efficiency",
+      "status": "active",
+      "taskFile": "tasks/context-efficiency.md",
+      "commands": [
+        "npm run smoke:context",
+        "npm run smoke:context-details",
+        "npm run smoke:source-drift"
+      ],
+      "metrics": [
+        "rawOutputAvoided",
+        "retrievalBounded",
+        "contextWarnings",
+        "summaryUsefulness"
+      ]
+    },
+    {
+      "id": "delegation-readiness",
+      "name": "Delegation Readiness",
+      "category": "delegation",
+      "status": "blocked-until-subagents-fixed",
+      "taskFile": "tasks/delegation-readiness.md",
+      "commands": [
+        "npm run smoke:child-control",
+        "npm run smoke:child-notifications",
+        "npm run smoke:subagent-lifecycle"
+      ],
+      "metrics": [
+        "childTaskClarity",
+        "childResultUsefulness",
+        "parallelSpeedup",
+        "wastedDelegations"
+      ]
+    },
+    {
+      "id": "skill-usage-improvement",
+      "name": "Skill Usage and Improvement",
+      "category": "skill-usage",
+      "status": "active",
+      "taskFile": "tasks/skill-usage-improvement.md",
+      "commands": [
+        "npm run smoke:improve-skill",
+        "npm run smoke:skill-slash"
+      ],
+      "metrics": [
+        "skillSelectionCorrectness",
+        "skillLoadLatency",
+        "staleSkillDetection",
+        "skillRewriteQuality"
+      ]
+    },
+    {
+      "id": "tool-selection-correctness",
+      "name": "Tool Selection Correctness",
+      "category": "tool-efficiency",
+      "status": "active",
+      "taskFile": "tasks/tool-selection-correctness.md",
+      "commands": [
+        "npm run smoke:tool-scenario-cards",
+        "npm run smoke:tool-selection-eval"
+      ],
+      "metrics": [
+        "correctToolSelection",
+        "nativeToolVsShellFallback",
+        "wastedToolCalls",
+        "stageMatch",
+        "antiTriggerAvoided"
+      ]
+    }
+  ]
+}

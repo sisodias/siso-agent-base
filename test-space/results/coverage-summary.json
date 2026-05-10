@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-05-10T07:49:49.093Z",
+  "totalCapabilities": 68,
+  "summary": {
+    "covered": 21,
+    "idea-only": 5,
+    "external": 28,
+    "manual": 13,
+    "blocked": 1
+  },
+  "untested": [],
+  "blocked": [
+    "child-agent-spawn"
+  ]
+}

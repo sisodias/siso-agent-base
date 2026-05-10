@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-05-10T07:49:51.498Z",
+  "traceCount": 8,
+  "uniqueRunIds": 8,
+  "averageOverallScore": 77,
+  "validationsRun": 31,
+  "validationsPassed": 31,
+  "validationPassRate": 1,
+  "failedRunCount": 0,
+  "activeFamilyCount": 3,
+  "warningCount": 18,
+  "activeErrorCount": 0,
+  "eventCounts": {
+    "run.started": 8,
+    "contract.matched": 18,
+    "tool.started": 47,
+    "tool.completed": 47,
+    "file.read": 25,
+    "command.validation": 31,
+    "scorecard.updated": 8,
+    "run.completed": 8,
+    "context.filtered": 1,
+    "drift.detected": 2,
+    "file.changed": 9
+  },
+  "recommendations": [
+    {
+      "priority": "low",
+      "id": "install-drift-resolved-monitor",
+      "summary": "Historical install/runtime drift was detected but the latest run is clean; keep monitoring."
+    },
+    {
+      "priority": "medium",
+      "id": "record-child-agent-events",
+      "summary": "Flight traces do not yet include child agent events; wire subagent lifecycle once subagents are healthy."
+    }
+  ],
+  "traces": [
+    {
+      "file": "code-intel-2026-05-09T17-49-47-616Z.json",
+      "runId": "code-intel-2026-05-09T17-49-47-616Z",
+      "task": "Record code-intelligence/tooling primitives as flight-recorder evidence.",
+      "startedAt": "2026-05-09T17:49:47.616Z",
+      "completedAt": "2026-05-09T17:49:47.928Z",
+      "overall": 65,
+      "validationsRun": 1,
+      "validationsPassed": 1,
+      "risks": 1
+    },
+    {
+      "file": "code-intel-2026-05-09T17-50-40-292Z.json",
+      "runId": "code-intel-2026-05-09T17-50-40-292Z",
+      "task": "Record code-intelligence/tooling primitives as flight-recorder evidence.",
+      "startedAt": "2026-05-09T17:50:40.292Z",
+      "completedAt": "2026-05-09T17:50:57.575Z",
+      "overall": 82,
+      "validationsRun": 1,
+      "validationsPassed": 1,
+      "risks": 0
+    },
+    {
+      "file": "context-filter-2026-05-09T17-45-47-967Z.json",
+      "runId": "context-filter-2026-05-09T17-45-47-967Z",
+      "task": "Record context filtering as flight-recorder evidence.",
+      "startedAt": "2026-05-09T17:45:47.967Z",
+      "completedAt": "2026-05-09T17:45:49.582Z",
+      "overall": 79,
+      "validationsRun": 4,
+      "validationsPassed": 4,
+      "risks": 0
+    },
+    {
+      "file": "doctor-readiness-2026-05-09T17-05-21-017Z.json",
+      "runId": "doctor-readiness-2026-05-09T17-05-21-017Z",
+      "task": "Record doctor readiness checks as a flight-recorder trace.",
+      "startedAt": "2026-05-09T17:05:21.017Z",
+      "completedAt": "2026-05-09T17:05:23.498Z",
+      "overall": 78,
+      "validationsRun": 5,
+      "validationsPassed": 5,
+      "risks": 13
+    },
+    {
+      "file": "doctor-readiness-2026-05-09T17-11-14-767Z.json",
+      "runId": "doctor-readiness-2026-05-09T17-11-14-767Z",
+      "task": "Record doctor readiness checks as a flight-recorder trace.",
+      "startedAt": "2026-05-09T17:11:14.767Z",
+      "completedAt": "2026-05-09T17:11:16.522Z",
+      "overall": 78,
+      "validationsRun": 5,
+      "validationsPassed": 5,
+      "risks": 5
+    },
+    {
+      "file": "doctor-readiness-2026-05-09T17-18-45-174Z.json",
+      "runId": "doctor-readiness-2026-05-09T17-18-45-174Z",
+      "task": "Record doctor readiness checks as a flight-recorder trace.",
+      "startedAt": "2026-05-09T17:18:45.174Z",
+      "completedAt": "2026-05-09T17:18:46.873Z",
+      "overall": 78,
+      "validationsRun": 5,
+      "validationsPassed": 5,
+      "risks": 0
+    },
+    {
+      "file": "doctor-readiness-2026-05-09T17-19-14-638Z.json",
+      "runId": "doctor-readiness-2026-05-09T17-19-14-638Z",
+      "task": "Record doctor readiness checks as a flight-recorder trace.",
+      "startedAt": "2026-05-09T17:19:14.638Z",
+      "completedAt": "2026-05-09T17:19:16.000Z",
+      "overall": 78,
+      "validationsRun": 5,
+      "validationsPassed": 5,
+      "risks": 0
+    },
+    {
+      "file": "doctor-readiness-2026-05-09T17-19-16-621Z.json",
+      "runId": "doctor-readiness-2026-05-09T17-19-16-621Z",
+      "task": "Record doctor readiness checks as a flight-recorder trace.",
+      "startedAt": "2026-05-09T17:19:16.621Z",
+      "completedAt": "2026-05-09T17:19:17.937Z",
+      "overall": 78,
+      "validationsRun": 5,
+      "validationsPassed": 5,
+      "risks": 0
+    }
+  ]
+}

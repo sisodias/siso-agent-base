@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { chooseRoute } from "./route-policy.js";
+import { buildReadyWave, claimNextTask, failAndBlockChildren, resumeFailed } from "./task-scheduler.js";
 export function taskStorePath(cwd = process.cwd()) {
     return join(resolve(cwd), ".pi", "tasks", "siso-tasks.json");
 }
@@ -109,6 +110,74 @@ export function updateSisoTask(input) {
     writeStore(path, store);
     return { path, task: next };
 }
+export function claimNextSisoTask(input = {}) {
+    const path = taskStorePath(input.cwd);
+    const store = readStore(path);
+    const result = claimNextTask(store.tasks, {
+        ...(input.now ? { now: input.now } : {}),
+    });
+    store.tasks = result.tasks;
+    writeStore(path, store);
+    return {
+        path,
+        task: result.task,
+        index: result.index,
+        tasks: result.tasks,
+        total: store.tasks.length,
+    };
+}
+export function buildSisoTaskWave(input = {}) {
+    const path = taskStorePath(input.cwd);
+    const store = readStore(path);
+    const result = buildReadyWave(store.tasks, {
+        ...(typeof input.maxParallel === "number" ? { maxParallel: input.maxParallel } : {}),
+        ...(input.now ? { now: input.now } : {}),
+    });
+    store.tasks = result.tasks;
+    writeStore(path, store);
+    return {
+        path,
+        claimedTasks: result.claimedTasks,
+        tasks: result.tasks,
+        total: store.tasks.length,
+    };
+}
+export function failAndBlockSisoTask(input) {
+    if (!input.id.trim())
+        throw new Error("id is required");
+    const path = taskStorePath(input.cwd);
+    const store = readStore(path);
+    const result = failAndBlockChildren(store.tasks, input.id, {
+        ...(input.now ? { now: input.now } : {}),
+    });
+    store.tasks = result.tasks;
+    writeStore(path, store);
+    return {
+        path,
+        failedTask: result.failedTask,
+        blockedTasks: result.blockedTasks,
+        tasks: result.tasks,
+        total: store.tasks.length,
+    };
+}
+export function resumeFailedSisoTask(input) {
+    if (!input.id.trim())
+        throw new Error("id is required");
+    const path = taskStorePath(input.cwd);
+    const store = readStore(path);
+    const result = resumeFailed(store.tasks, input.id, {
+        ...(input.now ? { now: input.now } : {}),
+    });
+    store.tasks = result.tasks;
+    writeStore(path, store);
+    return {
+        path,
+        rootTask: result.rootTask,
+        resumedTasks: result.resumedTasks,
+        tasks: result.tasks,
+        total: store.tasks.length,
+    };
+}
 export function formatSisoTask(task) {
     return [
         `id=${task.id}`,
@@ -122,6 +191,31 @@ export function formatSisoTask(task) {
         `blocked_by=${task.blockedBy.join(",") || "none"}`,
         `updated_at=${task.updatedAt}`,
     ].join(" ");
+}
+export function formatSisoTaskScheduleResult(result) {
+    const lines = [
+        `store=${result.path}`,
+        `total=${result.total ?? result.tasks?.length ?? 0}`,
+    ];
+    if (result.task !== undefined) {
+        lines.push(result.task ? `claimed=${result.task.id}` : "claimed=none");
+    }
+    if (Array.isArray(result.claimedTasks)) {
+        lines.push(`claimed=${result.claimedTasks.map((task) => task.id).join(",") || "none"}`);
+    }
+    if (result.failedTask) {
+        lines.push(`failed=${result.failedTask.id}`);
+    }
+    if (Array.isArray(result.blockedTasks)) {
+        lines.push(`blocked=${result.blockedTasks.map((task) => task.id).join(",") || "none"}`);
+    }
+    if (result.rootTask) {
+        lines.push(`resumed_root=${result.rootTask.id}`);
+    }
+    if (Array.isArray(result.resumedTasks)) {
+        lines.push(`resumed=${result.resumedTasks.map((task) => `${task.id}:${task.status}`).join(",") || "none"}`);
+    }
+    return lines.join("\n");
 }
 export function formatSisoTaskList(result) {
     if (result.tasks.length === 0) {

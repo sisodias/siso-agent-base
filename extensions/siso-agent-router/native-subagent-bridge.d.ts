@@ -14,6 +14,8 @@ export interface NativeSubagentSpawnOptions {
     background?: boolean;
     maxDepth?: number;
     noTools?: boolean;
+    fleetId?: string;
+    budget?: Record<string, unknown>;
     decision?: RouteDecision;
     signal?: AbortSignal;
     ctx?: NativeSubagentBridgeContext;
@@ -39,6 +41,8 @@ export declare function nativeSubagentAvailable(ctx?: NativeSubagentBridgeContex
 export declare function sisoRoleToNativeAgent(decision: RouteDecision): string;
 export declare function modelForNativeSubagent(decision: RouteDecision): string | undefined;
 export declare function buildNativeSubagentParams(task: string, decision: RouteDecision, options: NativeSubagentSpawnOptions): Record<string, unknown>;
-export declare function formatNativeSpawnResult(task: string, decision: RouteDecision, native: NativeSubagentToolResult): string;
+export declare function formatNativeSpawnResult(task: string, decision: RouteDecision, native: NativeSubagentToolResult, childId: string, childStatus: string, timing?: {
+    durationMs?: number;
+}): string;
 export declare function executeSpawnWithNativeSubagentBridge(options: NativeSubagentSpawnOptions): Promise<NativeSubagentSpawnResult>;
 export {};

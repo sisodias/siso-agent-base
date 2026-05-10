@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-05-10T07:49:51.196Z",
+  "traces": 10,
+  "traceFiles": [
+    "examples/flight-recorder/source-drift-run.json",
+    "test-space/results/flight-runs/code-intel-2026-05-09T17-49-47-616Z.json",
+    "test-space/results/flight-runs/code-intel-2026-05-09T17-50-40-292Z.json",
+    "test-space/results/flight-runs/context-filter-2026-05-09T17-45-47-967Z.json",
+    "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-05-21-017Z.json",
+    "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-11-14-767Z.json",
+    "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-18-45-174Z.json",
+    "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-19-14-638Z.json",
+    "test-space/results/flight-runs/doctor-readiness-2026-05-09T17-19-16-621Z.json",
+    "test-space/results/flight-runs/doctor-readiness-latest.json"
+  ],
+  "runIds": [
+    "example-source-drift-run",
+    "code-intel-2026-05-09T17-49-47-616Z",
+    "code-intel-2026-05-09T17-50-40-292Z",
+    "context-filter-2026-05-09T17-45-47-967Z",
+    "doctor-readiness-2026-05-09T17-05-21-017Z",
+    "doctor-readiness-2026-05-09T17-11-14-767Z",
+    "doctor-readiness-2026-05-09T17-18-45-174Z",
+    "doctor-readiness-2026-05-09T17-19-14-638Z",
+    "doctor-readiness-2026-05-09T17-19-16-621Z",
+    "doctor-readiness-latest"
+  ],
+  "eventTypes": [
+    "run.started",
+    "run.completed",
+    "tool.started",
+    "tool.completed",
+    "file.read",
+    "file.changed",
+    "command.validation",
+    "contract.matched",
+    "drift.detected",
+    "child.started",
+    "child.completed",
+    "context.filtered",
+    "scorecard.updated"
+  ],
+  "scoreFields": [
+    "taskAchievement",
+    "toolEfficiency",
+    "contextEfficiency",
+    "codeIntelligence",
+    "delegation",
+    "skillUsage",
+    "safetyGovernance",
+    "memoryImproveability",
+    "operatorExperience",
+    "overall"
+  ]
+}

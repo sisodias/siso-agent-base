@@ -1,0 +1,1717 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-10",
+  "purpose": "Compact scenario-first metadata that teaches agents when to use each SISO tool, when to avoid it, and how to validate it.",
+  "cards": [
+    {
+      "id": "repo-search",
+      "tool": "repoSearch",
+      "summary": "Search repo text, regex, symbols-ish patterns, or filenames with bounded structured results.",
+      "workflowStages": [
+        "recon",
+        "debugging",
+        "planning"
+      ],
+      "useWhen": [
+        "Need to find code/docs by text, phrase, command, error, config key, or filename.",
+        "Do not know the exact file path yet."
+      ],
+      "avoidWhen": [
+        "Exact paths are already known; use readMany.",
+        "Need a task-level evidence bundle; use contextPack or briefRepo."
+      ],
+      "replacesShellPatterns": [
+        "find | grep",
+        "rg with huge raw dumps"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "path",
+        "line",
+        "preview"
+      ],
+      "failureModes": [
+        "query too broad",
+        "low-signal matches",
+        "generated/vendor directory noise"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-scenario-cards"
+      ]
+    },
+    {
+      "id": "public-code-search",
+      "tool": "publicCodeSearch",
+      "summary": "Search public open-source code through Sourcegraph with compact repo/path/line previews.",
+      "workflowStages": [
+        "research",
+        "recon",
+        "planning"
+      ],
+      "useWhen": [
+        "Need implementation patterns from public repositories or comparable agent runtimes.",
+        "Local repo search cannot answer how other projects solved the same problem."
+      ],
+      "avoidWhen": [
+        "The answer should come from local source; use repoSearch or symbolSearch.",
+        "Need full external files; inspect selected result URLs manually after narrowing."
+      ],
+      "replacesShellPatterns": [
+        "manual browser GitHub searches",
+        "large copied web/code dumps"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "repo",
+        "path",
+        "line",
+        "preview",
+        "url"
+      ],
+      "failureModes": [
+        "query too broad",
+        "Sourcegraph unavailable",
+        "public code differs from local architecture"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-scenario-cards"
+      ]
+    },
+    {
+      "id": "read-many",
+      "tool": "readMany",
+      "summary": "Read several known files in one bounded call with per-file errors and truncation.",
+      "workflowStages": [
+        "inspection",
+        "planning",
+        "review"
+      ],
+      "useWhen": [
+        "Exact paths are known and contents are needed.",
+        "Need to compare related files without many one-off reads."
+      ],
+      "avoidWhen": [
+        "Do not know paths yet; use repoSearch or briefRepo.",
+        "Need only structure; use fileOutline or projectMap."
+      ],
+      "replacesShellPatterns": [
+        "cat file1 file2 file3",
+        "many sequential read calls"
+      ],
+      "requiredInputs": [
+        "paths"
+      ],
+      "expectedOutputs": [
+        "path",
+        "text",
+        "truncated",
+        "error"
+      ],
+      "failureModes": [
+        "reading too many large files",
+        "secret-like paths refused",
+        "missing files"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [
+        "context-safety"
+      ],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "project-tree",
+      "tool": "projectTree",
+      "summary": "Return a compact tree of the repo while ignoring noisy directories.",
+      "workflowStages": [
+        "recon",
+        "onboarding"
+      ],
+      "useWhen": [
+        "Need a quick shape of an unfamiliar repo or subdirectory.",
+        "Need to choose likely directories before search/read."
+      ],
+      "avoidWhen": [
+        "Need semantic architecture summary; use projectMap or briefRepo.",
+        "Need file contents; use readMany."
+      ],
+      "replacesShellPatterns": [
+        "find . -maxdepth",
+        "ls -R"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "tree text"
+      ],
+      "failureModes": [
+        "depth too high",
+        "too many low-value files"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "project-map",
+      "tool": "projectMap",
+      "summary": "Summarize key repo directories and package scripts for orientation.",
+      "workflowStages": [
+        "recon",
+        "planning",
+        "onboarding"
+      ],
+      "useWhen": [
+        "Need high-level repo orientation and available scripts.",
+        "Need to understand docs/scripts/extensions layout quickly."
+      ],
+      "avoidWhen": [
+        "Need exact text matches; use repoSearch.",
+        "Need source symbols; use fileOutline or symbolSearch."
+      ],
+      "replacesShellPatterns": [
+        "manual package.json plus ls inspection"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "name",
+        "version",
+        "directories",
+        "scripts"
+      ],
+      "failureModes": [
+        "summary too shallow for implementation",
+        "package.json missing"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "ranked-repo-map",
+      "tool": "rankedRepoMap",
+      "summary": "Build a token-bounded symbol/file relevance map inspired by Aider repo maps.",
+      "workflowStages": [
+        "recon",
+        "planning",
+        "debugging"
+      ],
+      "useWhen": [
+        "Need the most relevant local files and symbols for a task before reading many files.",
+        "A broad task would otherwise require repeated search/read/summarize loops."
+      ],
+      "avoidWhen": [
+        "Need exact text matches; use repoSearch.",
+        "Need public implementation examples; use publicCodeSearch."
+      ],
+      "replacesShellPatterns": [
+        "many sequential rg/read exploration loops",
+        "manual repo orientation before every child spawn"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "ranked files",
+        "scores",
+        "symbols",
+        "bounded map"
+      ],
+      "failureModes": [
+        "regex symbol extraction misses dynamic syntax",
+        "ranking is heuristic until tree-sitter graph indexing lands",
+        "query terms too generic"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-scenario-cards"
+      ]
+    },
+    {
+      "id": "file-outline",
+      "tool": "fileOutline",
+      "summary": "Extract headings/functions/classes/constants from a known file.",
+      "workflowStages": [
+        "inspection",
+        "planning",
+        "review"
+      ],
+      "useWhen": [
+        "Need structure of a known code or markdown file before reading all content.",
+        "Need likely symbol lines in a large file."
+      ],
+      "avoidWhen": [
+        "Need cross-file references; use symbolSearch or future codeQuery.",
+        "Need full body text; use readMany."
+      ],
+      "replacesShellPatterns": [
+        "grep '^function'",
+        "manual skim of large files"
+      ],
+      "requiredInputs": [
+        "path"
+      ],
+      "expectedOutputs": [
+        "line",
+        "name",
+        "preview"
+      ],
+      "failureModes": [
+        "regex outline misses complex syntax",
+        "non-text file"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "symbol-search",
+      "tool": "symbolSearch",
+      "summary": "Find likely definitions or assignments for a symbol name across the repo.",
+      "workflowStages": [
+        "recon",
+        "inspection",
+        "debugging"
+      ],
+      "useWhen": [
+        "Know a function/class/constant name and need likely definition sites.",
+        "Need faster symbol lookup than broad text search."
+      ],
+      "avoidWhen": [
+        "Need exact LSP definitions/references; use future codeQuery/index.",
+        "Need arbitrary phrase search; use repoSearch."
+      ],
+      "replacesShellPatterns": [
+        "rg 'function name|const name'"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "path",
+        "line",
+        "preview"
+      ],
+      "failureModes": [
+        "false positives from regex",
+        "dynamic exports missed"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "context-pack",
+      "tool": "contextPack",
+      "summary": "Bundle search results and/or selected file contents into a compact task context packet.",
+      "workflowStages": [
+        "planning",
+        "inspection",
+        "handoff"
+      ],
+      "useWhen": [
+        "Need a small evidence bundle for planning, delegation, or implementation.",
+        "Need search plus reads in one structured result."
+      ],
+      "avoidWhen": [
+        "Need only a single exact file; use readMany.",
+        "Need a broader repo onboarding brief; use briefRepo."
+      ],
+      "replacesShellPatterns": [
+        "search then several manual reads",
+        "copying raw snippets into chat"
+      ],
+      "requiredInputs": [
+        "query or paths"
+      ],
+      "expectedOutputs": [
+        "search",
+        "files",
+        "purpose"
+      ],
+      "failureModes": [
+        "query too broad",
+        "too many irrelevant files",
+        "token budget pressure"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap",
+        "context-filtering"
+      ],
+      "relatedContracts": [
+        "context-safety"
+      ],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "context-efficiency"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:context"
+      ]
+    },
+    {
+      "id": "brief-repo",
+      "tool": "briefRepo",
+      "summary": "Produce a task-aware repo briefing from project map, tree, and capability search.",
+      "workflowStages": [
+        "onboarding",
+        "planning",
+        "delegation"
+      ],
+      "useWhen": [
+        "Starting a non-trivial repo task and need orientation.",
+        "Need likely capabilities, scripts, and directories before deeper inspection."
+      ],
+      "avoidWhen": [
+        "Exact files and changes are already known.",
+        "Need raw search matches; use repoSearch."
+      ],
+      "replacesShellPatterns": [
+        "manual README/package/tree/capability scan"
+      ],
+      "requiredInputs": [
+        "task or query"
+      ],
+      "expectedOutputs": [
+        "map",
+        "tree",
+        "capabilities"
+      ],
+      "failureModes": [
+        "brief too shallow",
+        "task wording too vague"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap",
+        "lazy-tool-discovery",
+        "tool-scenario-cards"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "run-check",
+      "tool": "runCheck",
+      "summary": "Run a validation command with timeout and compact tail summary.",
+      "workflowStages": [
+        "verification",
+        "debugging",
+        "repair"
+      ],
+      "useWhen": [
+        "Need to verify changes or reproduce a failing check.",
+        "Need bounded command output rather than raw terminal spam."
+      ],
+      "avoidWhen": [
+        "Do not know which check to run; use related checks or test-space/capability metadata first.",
+        "Need long interactive commands."
+      ],
+      "replacesShellPatterns": [
+        "bash npm run ... with huge output"
+      ],
+      "requiredInputs": [
+        "command"
+      ],
+      "expectedOutputs": [
+        "ok",
+        "exitCode",
+        "elapsedMs",
+        "summary"
+      ],
+      "failureModes": [
+        "timeout",
+        "command too broad",
+        "tail omits root cause"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness",
+        "context-efficiency"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "workspace-status",
+      "tool": "workspaceStatus",
+      "summary": "Return concise git status/branch information.",
+      "workflowStages": [
+        "review",
+        "verification",
+        "release"
+      ],
+      "useWhen": [
+        "Need to see changed files before/after edits.",
+        "Need final summary of workspace state."
+      ],
+      "avoidWhen": [
+        "Need exact code changes; use workspaceDiff.",
+        "Repo is not git-backed."
+      ],
+      "replacesShellPatterns": [
+        "git status --short --branch"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "ok",
+        "exitCode",
+        "text"
+      ],
+      "failureModes": [
+        "not a git repository",
+        "unrelated pre-existing changes mixed in"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "workspace-diff",
+      "tool": "workspaceDiff",
+      "summary": "Return bounded git diff or diff stat for review.",
+      "workflowStages": [
+        "review",
+        "verification"
+      ],
+      "useWhen": [
+        "Need to inspect exact modifications before final response.",
+        "Need a concise diff stat for changed files."
+      ],
+      "avoidWhen": [
+        "Need current file contents; use readMany.",
+        "Diff is huge and needs path filtering first."
+      ],
+      "replacesShellPatterns": [
+        "git diff",
+        "git diff --stat"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "ok",
+        "text",
+        "truncated"
+      ],
+      "failureModes": [
+        "truncated diff",
+        "unrelated changes included"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "capability-search",
+      "tool": "capabilitySearch",
+      "summary": "Search SISO capability registry for existing features, ideas, and validations.",
+      "workflowStages": [
+        "planning",
+        "docs",
+        "release"
+      ],
+      "useWhen": [
+        "Need to avoid duplicate infrastructure.",
+        "Need related capability IDs before docs/changelog/test updates."
+      ],
+      "avoidWhen": [
+        "Need one exact capability record; use capabilityShow.",
+        "Need to edit capability metadata; use capabilityAdd/capabilityUpdate."
+      ],
+      "replacesShellPatterns": [
+        "manual grep in registry.json"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "id",
+        "name",
+        "status",
+        "priority",
+        "summary"
+      ],
+      "failureModes": [
+        "query wording misses matching capability",
+        "registry stale"
+      ],
+      "relatedCapabilities": [
+        "capability-registry",
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [
+        "capability-registry"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ]
+    },
+    {
+      "id": "contract-diff",
+      "tool": "contractDiff",
+      "summary": "Validate or inspect contract drift and final-check expectations.",
+      "workflowStages": [
+        "review",
+        "verification",
+        "release"
+      ],
+      "useWhen": [
+        "Changing behavior governed by SISO contracts.",
+        "Need to confirm contract docs and smoke expectations remain aligned."
+      ],
+      "avoidWhen": [
+        "Task does not touch contract-governed behavior.",
+        "Need capability metadata only; use capabilitySearch/show."
+      ],
+      "replacesShellPatterns": [
+        "manual contract file diff review"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "contract drift or pass/fail summary"
+      ],
+      "failureModes": [
+        "contract not mapped to changed files",
+        "manual interpretation still required"
+      ],
+      "relatedCapabilities": [
+        "agent-contracts"
+      ],
+      "relatedContracts": [
+        "release-metadata",
+        "capability-registry",
+        "test-space",
+        "router-subagents",
+        "context-safety",
+        "install-runtime"
+      ],
+      "relatedBenchmarkSuites": [
+        "foundation-readiness"
+      ],
+      "validationCommands": [
+        "npm run smoke:contracts"
+      ]
+    },
+    {
+      "id": "source-drift",
+      "tool": "sourceDrift",
+      "summary": "Detect source/runtime/documentation drift that may make agent behavior stale.",
+      "workflowStages": [
+        "verification",
+        "release",
+        "repair"
+      ],
+      "useWhen": [
+        "Runtime behavior may not match canonical source.",
+        "Need to catch stale installed code, docs, or generated metadata."
+      ],
+      "avoidWhen": [
+        "Only need simple git status; use workspaceStatus.",
+        "No source/runtime boundary is involved."
+      ],
+      "replacesShellPatterns": [
+        "manual source vs installed runtime checks"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "drift summary",
+        "pass/fail"
+      ],
+      "failureModes": [
+        "false confidence if drift target incomplete",
+        "environment-specific paths"
+      ],
+      "relatedCapabilities": [
+        "source-drift-detector"
+      ],
+      "relatedContracts": [
+        "install-runtime"
+      ],
+      "relatedBenchmarkSuites": [
+        "context-efficiency",
+        "foundation-readiness"
+      ],
+      "validationCommands": [
+        "npm run smoke:source-drift"
+      ]
+    },
+    {
+      "id": "doctor-readiness",
+      "tool": "doctorReadiness",
+      "summary": "Check readiness/health of SISO install, runtime, gateway, and operator-facing diagnostics.",
+      "workflowStages": [
+        "verification",
+        "operations",
+        "release"
+      ],
+      "useWhen": [
+        "Need to verify local SISO runtime health before relying on agent features.",
+        "Install/update/gateway behavior changed."
+      ],
+      "avoidWhen": [
+        "Only validating code-level unit smoke; run specific npm smoke instead.",
+        "Need repo search or docs context."
+      ],
+      "replacesShellPatterns": [
+        "manual siso doctor/readiness command chains"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "readiness checks",
+        "operator diagnostics"
+      ],
+      "failureModes": [
+        "environment unavailable",
+        "network/gateway transient failure"
+      ],
+      "relatedCapabilities": [
+        "siso-doctor",
+        "doctor-readiness"
+      ],
+      "relatedContracts": [
+        "install-runtime"
+      ],
+      "relatedBenchmarkSuites": [
+        "foundation-readiness"
+      ],
+      "validationCommands": [
+        "npm run smoke:doctor-readiness"
+      ]
+    },
+    {
+      "id": "apply-patch",
+      "tool": "applyPatch",
+      "summary": "Apply exact-text patches atomically after all replacements validate.",
+      "workflowStages": [
+        "editing",
+        "implementation",
+        "repair"
+      ],
+      "useWhen": [
+        "Need to change files with exact old/new text and fail safely if matches are ambiguous.",
+        "Need dry-run validation before writing."
+      ],
+      "avoidWhen": [
+        "Need to inspect files first; use readMany or gatherContext.",
+        "Need broad generated rewrites or formatting-only changes."
+      ],
+      "replacesShellPatterns": [
+        "python/perl one-off replacements",
+        "manual multi-file edits"
+      ],
+      "requiredInputs": [
+        "patches"
+      ],
+      "expectedOutputs": [
+        "changed",
+        "dryRun"
+      ],
+      "failureModes": [
+        "oldText not unique",
+        "patch too broad",
+        "unrelated local changes"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "doc-update",
+      "tool": "docUpdate",
+      "summary": "Update Markdown/docs by appending, inserting after a heading, or replacing a section.",
+      "workflowStages": [
+        "docs",
+        "release",
+        "implementation"
+      ],
+      "useWhen": [
+        "Need section-aware docs/changelog/capability text updates.",
+        "Need dry-run document update behavior."
+      ],
+      "avoidWhen": [
+        "Need code patches; use applyPatch.",
+        "Need only headings; use markdownOutline."
+      ],
+      "replacesShellPatterns": [
+        "manual markdown append",
+        "ad hoc sed section replacement"
+      ],
+      "requiredInputs": [
+        "path",
+        "content"
+      ],
+      "expectedOutputs": [
+        "path",
+        "bytes",
+        "dryRun"
+      ],
+      "failureModes": [
+        "section not found",
+        "wrong heading selected",
+        "append duplicates"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [
+        "capability-registry",
+        "release-metadata"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "markdown-outline",
+      "tool": "markdownOutline",
+      "summary": "List Markdown headings/structure for a known document.",
+      "workflowStages": [
+        "docs",
+        "inspection",
+        "planning"
+      ],
+      "useWhen": [
+        "Need to find the right document section before editing.",
+        "Need quick Markdown structure without reading the full file."
+      ],
+      "avoidWhen": [
+        "Need full contents; use readMany.",
+        "Need to update text; use docUpdate."
+      ],
+      "replacesShellPatterns": [
+        "grep '^#' docs/file.md"
+      ],
+      "requiredInputs": [
+        "path"
+      ],
+      "expectedOutputs": [
+        "line",
+        "preview"
+      ],
+      "failureModes": [
+        "non-markdown file",
+        "heading text ambiguous"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "capability-show",
+      "tool": "capabilityShow",
+      "summary": "Show one exact capability registry record by id/name.",
+      "workflowStages": [
+        "planning",
+        "docs",
+        "release"
+      ],
+      "useWhen": [
+        "Need details for a known capability id.",
+        "Need implementedIn/validatedBy/releasedIn metadata."
+      ],
+      "avoidWhen": [
+        "Need to discover possible capabilities; use capabilitySearch.",
+        "Need to edit metadata; use capabilityUpdate."
+      ],
+      "replacesShellPatterns": [
+        "manual JSON lookup in registry.json"
+      ],
+      "requiredInputs": [
+        "id"
+      ],
+      "expectedOutputs": [
+        "capability",
+        "found"
+      ],
+      "failureModes": [
+        "wrong id",
+        "stale registry"
+      ],
+      "relatedCapabilities": [
+        "capability-registry"
+      ],
+      "relatedContracts": [
+        "capability-registry"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ]
+    },
+    {
+      "id": "capability-add",
+      "tool": "capabilityAdd",
+      "summary": "Add a new capability registry entry with dry-run support.",
+      "workflowStages": [
+        "docs",
+        "release",
+        "planning"
+      ],
+      "useWhen": [
+        "A new capability/idea must be tracked in the registry.",
+        "Need structured capability metadata instead of manual JSON editing."
+      ],
+      "avoidWhen": [
+        "Capability already exists; use capabilityUpdate.",
+        "Need only lookup; use capabilitySearch/show."
+      ],
+      "replacesShellPatterns": [
+        "manual registry.json insertion"
+      ],
+      "requiredInputs": [
+        "id"
+      ],
+      "expectedOutputs": [
+        "capability",
+        "dryRun"
+      ],
+      "failureModes": [
+        "duplicate id",
+        "missing summary",
+        "invalid status/category"
+      ],
+      "relatedCapabilities": [
+        "capability-registry"
+      ],
+      "relatedContracts": [
+        "capability-registry"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ]
+    },
+    {
+      "id": "capability-update",
+      "tool": "capabilityUpdate",
+      "summary": "Update an existing capability registry entry with dry-run support.",
+      "workflowStages": [
+        "docs",
+        "release",
+        "implementation"
+      ],
+      "useWhen": [
+        "Implemented/validated/released metadata changed for a known capability.",
+        "Need to update paths, status, summary, or validation commands."
+      ],
+      "avoidWhen": [
+        "Need to create a new capability; use capabilityAdd.",
+        "Need only lookup; use capabilityShow."
+      ],
+      "replacesShellPatterns": [
+        "manual registry.json update"
+      ],
+      "requiredInputs": [
+        "id"
+      ],
+      "expectedOutputs": [
+        "capability",
+        "found",
+        "dryRun"
+      ],
+      "failureModes": [
+        "id not found",
+        "metadata drift",
+        "forgot capability smoke"
+      ],
+      "relatedCapabilities": [
+        "capability-registry"
+      ],
+      "relatedContracts": [
+        "capability-registry"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ]
+    },
+    {
+      "id": "capability-audit",
+      "tool": "capabilityAudit",
+      "summary": "Audit capability registry consistency and implemented path existence.",
+      "workflowStages": [
+        "verification",
+        "docs",
+        "release"
+      ],
+      "useWhen": [
+        "Need a quick consistency check for registry entries.",
+        "Before release after capability metadata changes."
+      ],
+      "avoidWhen": [
+        "Need one capability record; use capabilityShow.",
+        "Need package release metadata only; use release smoke."
+      ],
+      "replacesShellPatterns": [
+        "manual registry path audit"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "ok",
+        "missingImplementedPaths"
+      ],
+      "failureModes": [
+        "legacy entries with external/manual paths",
+        "false negatives for intentionally external coverage"
+      ],
+      "relatedCapabilities": [
+        "capability-registry"
+      ],
+      "relatedContracts": [
+        "capability-registry"
+      ],
+      "relatedBenchmarkSuites": [
+        "foundation-readiness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:capabilities"
+      ]
+    },
+    {
+      "id": "tool-search",
+      "tool": "toolSearch",
+      "summary": "Search Tool Scenario Cards and packs by task terms or keywords.",
+      "workflowStages": [
+        "tool-selection",
+        "planning"
+      ],
+      "useWhen": [
+        "Need to discover possible SISO tools for a scenario.",
+        "Need alternatives before loading a pack."
+      ],
+      "avoidWhen": [
+        "Need one recommended path; use toolRecommend.",
+        "Already know the card id; use toolShow."
+      ],
+      "replacesShellPatterns": [
+        "manual tool docs grep"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "results",
+        "packs"
+      ],
+      "failureModes": [
+        "query too vague",
+        "lexical ranking misses intent"
+      ],
+      "relatedCapabilities": [
+        "tool-scenario-cards",
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-selection-eval"
+      ]
+    },
+    {
+      "id": "tool-show",
+      "tool": "toolShow",
+      "summary": "Show one full Tool Scenario Card or pack card.",
+      "workflowStages": [
+        "tool-selection",
+        "planning"
+      ],
+      "useWhen": [
+        "Need detailed use/avoid guidance for one known tool or pack.",
+        "Need examples/failure modes before calling a tool."
+      ],
+      "avoidWhen": [
+        "Need ranking across many tools; use toolRecommend/search."
+      ],
+      "replacesShellPatterns": [
+        "manual docs/tools JSON lookup"
+      ],
+      "requiredInputs": [
+        "id"
+      ],
+      "expectedOutputs": [
+        "card or pack",
+        "found"
+      ],
+      "failureModes": [
+        "unknown card id",
+        "stale metadata"
+      ],
+      "relatedCapabilities": [
+        "tool-scenario-cards",
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "tool-recommend",
+      "tool": "toolRecommend",
+      "summary": "Recommend the best SISO tools/packs for a task with scenario reasons and avoid guidance.",
+      "workflowStages": [
+        "tool-selection",
+        "planning"
+      ],
+      "useWhen": [
+        "Unsure which SISO tool or pack fits a task.",
+        "Want one recommended workflow before shell fallback."
+      ],
+      "avoidWhen": [
+        "Already know exact tool and inputs.",
+        "Task is pure conversation with no tool need."
+      ],
+      "replacesShellPatterns": [
+        "guessing tools",
+        "defaulting to find/grep/bash"
+      ],
+      "requiredInputs": [
+        "task or query"
+      ],
+      "expectedOutputs": [
+        "taskIntent",
+        "recommendations",
+        "packRecommendations",
+        "notRecommended"
+      ],
+      "failureModes": [
+        "task too vague",
+        "ranking needs new eval case"
+      ],
+      "relatedCapabilities": [
+        "tool-scenario-cards",
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:tool-selection-eval",
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "tool-inventory",
+      "tool": "toolInventory",
+      "summary": "List compact scenario cards/packs, optionally filtered by domain or loaded state.",
+      "workflowStages": [
+        "tool-selection",
+        "debugging"
+      ],
+      "useWhen": [
+        "Need to see available or loaded tool cards/packs.",
+        "Debug lazy tool state."
+      ],
+      "avoidWhen": [
+        "Need ranked guidance; use toolRecommend.",
+        "Need one full card; use toolShow."
+      ],
+      "replacesShellPatterns": [
+        "manual docs/tools listing"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "cards",
+        "packs",
+        "loaded"
+      ],
+      "failureModes": [
+        "inventory too broad",
+        "domain filter mismatch"
+      ],
+      "relatedCapabilities": [
+        "tool-scenario-cards",
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "tool-load",
+      "tool": "toolLoad",
+      "summary": "Mark tool cards or packs as loaded for lazy schema visibility/state tracking.",
+      "workflowStages": [
+        "tool-selection",
+        "setup"
+      ],
+      "useWhen": [
+        "Need a pack/tool to remain available for upcoming turns.",
+        "After toolRecommend selects a pack for a task."
+      ],
+      "avoidWhen": [
+        "Only need to inspect guidance; use toolShow.",
+        "Tool is risky and not needed."
+      ],
+      "replacesShellPatterns": [
+        "manual prompt stuffing of tool docs"
+      ],
+      "requiredInputs": [
+        "toolIds or packIds"
+      ],
+      "expectedOutputs": [
+        "loaded",
+        "dryRun"
+      ],
+      "failureModes": [
+        "unknown id",
+        "over-loading packs",
+        "stale loaded state"
+      ],
+      "relatedCapabilities": [
+        "lazy-tool-discovery",
+        "tool-scenario-cards"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness",
+        "context-efficiency"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-schema-lazy"
+      ]
+    },
+    {
+      "id": "tool-unload",
+      "tool": "toolUnload",
+      "summary": "Clear loaded tool/pack state for lazy schema visibility.",
+      "workflowStages": [
+        "tool-selection",
+        "cleanup"
+      ],
+      "useWhen": [
+        "Task changed and loaded tools are no longer relevant.",
+        "Need to reduce visible schema set."
+      ],
+      "avoidWhen": [
+        "Current task still needs loaded pack."
+      ],
+      "replacesShellPatterns": [
+        "manual prompt/tool reset"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "loaded",
+        "dryRun"
+      ],
+      "failureModes": [
+        "unloading tools still needed",
+        "state already empty"
+      ],
+      "relatedCapabilities": [
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "context-efficiency"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling",
+        "npm run smoke:tool-schema-lazy"
+      ]
+    },
+    {
+      "id": "tool-stats",
+      "tool": "toolStats",
+      "summary": "Summarize tool adoption telemetry for recommend/load/unload activity.",
+      "workflowStages": [
+        "debugging",
+        "analysis",
+        "tool-selection"
+      ],
+      "useWhen": [
+        "Need to know whether agents are using scenario-card discovery.",
+        "Need recent recommend/load/unload telemetry."
+      ],
+      "avoidWhen": [
+        "Need to choose a tool now; use toolRecommend."
+      ],
+      "replacesShellPatterns": [
+        "manual .siso/tool-telemetry.jsonl inspection"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "counts",
+        "recommendedTools",
+        "recommendedPacks",
+        "recent"
+      ],
+      "failureModes": [
+        "no telemetry yet",
+        "local-only history"
+      ],
+      "relatedCapabilities": [
+        "tool-scenario-cards",
+        "lazy-tool-discovery"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:agent-tooling"
+      ]
+    },
+    {
+      "id": "autopilot-plan",
+      "tool": "autopilotPlan",
+      "summary": "Build a bounded controller/worker/verifier plan for post-implementation specification checks and compact feedback.",
+      "workflowStages": [
+        "verification",
+        "review",
+        "autopilot"
+      ],
+      "useWhen": [
+        "Worker says the task is done and the result needs spec-level verification.",
+        "Need a Minimax-style read-only verifier loop with checkpoints, checks, failure signatures, and feedback packets."
+      ],
+      "avoidWhen": [
+        "Need to run one direct command now; use runCheck.",
+        "No implementation or specification exists yet."
+      ],
+      "replacesShellPatterns": [
+        "manual verifier prompt handoff",
+        "repeated ad hoc test/fix/test chat loops"
+      ],
+      "requiredInputs": [
+        "objective",
+        "specification",
+        "checks"
+      ],
+      "expectedOutputs": [
+        "controller",
+        "roles",
+        "phases",
+        "requiredChecks",
+        "feedbackPacket",
+        "flightRecorder"
+      ],
+      "failureModes": [
+        "missing session identity",
+        "unsafe check command",
+        "unbounded iteration request",
+        "verifier asked to edit in read-only mode"
+      ],
+      "relatedCapabilities": [
+        "autopilot-verifier-plan",
+        "autopilot-smoke-fix-loop",
+        "harness-benchmark-scorecard",
+        "flight-recorder"
+      ],
+      "relatedContracts": [
+        "context-safety",
+        "router-subagents"
+      ],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness",
+        "foundation-readiness",
+        "delegation-readiness"
+      ],
+      "validationCommands": [
+        "npm run smoke:autopilot-plan",
+        "npm run smoke:autopilot-verifier",
+        "npm run smoke:tool-scenario-cards"
+      ]
+    },
+    {
+      "id": "related-checks",
+      "tool": "relatedChecks",
+      "summary": "Recommend the smallest useful validation commands for changed paths, capabilities, or task intent.",
+      "workflowStages": [
+        "verification",
+        "planning",
+        "review"
+      ],
+      "useWhen": [
+        "Need to know what smoke/check commands to run after changes.",
+        "Want primary/secondary/full validation tiers instead of guessing or jumping to smoke:all."
+      ],
+      "avoidWhen": [
+        "Need to execute a command now; use runCheck.",
+        "Task has no repo/file/capability impact."
+      ],
+      "replacesShellPatterns": [
+        "manual package.json script guessing",
+        "always running smoke:all first"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "primary",
+        "secondary",
+        "full",
+        "reasons"
+      ],
+      "failureModes": [
+        "path mapping too broad",
+        "new files lack check mapping"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap",
+        "tool-scenario-cards"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:related-checks"
+      ]
+    },
+    {
+      "id": "gather-context",
+      "tool": "gatherContext",
+      "summary": "Gather a task-aware context packet using tool recommendations, ranked repo map, search/read evidence, and related checks.",
+      "workflowStages": [
+        "recon",
+        "planning",
+        "handoff"
+      ],
+      "useWhen": [
+        "Starting a non-trivial code task and need relevant files plus checks.",
+        "Need one bounded context packet instead of repeated search/read loops."
+      ],
+      "avoidWhen": [
+        "Exact file and change are already known; use readMany/applyPatch.",
+        "Need only tool selection; use toolRecommend."
+      ],
+      "replacesShellPatterns": [
+        "search then many manual reads",
+        "ad hoc context packet assembly"
+      ],
+      "requiredInputs": [
+        "task or query"
+      ],
+      "expectedOutputs": [
+        "summary",
+        "evidence",
+        "files",
+        "relatedChecks"
+      ],
+      "failureModes": [
+        "task too vague",
+        "ranked files miss dynamic behavior",
+        "context too broad"
+      ],
+      "relatedCapabilities": [
+        "agent-tooling-roadmap",
+        "tool-scenario-cards"
+      ],
+      "relatedContracts": [
+        "context-safety"
+      ],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "context-efficiency"
+      ],
+      "validationCommands": [
+        "npm run smoke:gather-context"
+      ]
+    },
+    {
+      "id": "repo-index-build",
+      "tool": "repoIndexBuild",
+      "summary": "Build a cached local repo index of files, symbols, and imports.",
+      "workflowStages": [
+        "recon",
+        "planning"
+      ],
+      "useWhen": [
+        "Need faster repeated codebase navigation or Sourcegraph-lite local queries.",
+        "Starting a larger coding task where repeated search/read loops are likely."
+      ],
+      "avoidWhen": [
+        "Need one exact text match; use repoSearch.",
+        "Need current file contents; use readMany."
+      ],
+      "replacesShellPatterns": [
+        "repeated find/rg scans",
+        "manual symbol inventory"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "files",
+        "symbols",
+        "imports",
+        "indexDir"
+      ],
+      "failureModes": [
+        "index can become stale after edits",
+        "large generated files should stay ignored"
+      ],
+      "relatedCapabilities": [
+        "repo-index"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:repo-index"
+      ]
+    },
+    {
+      "id": "repo-index-status",
+      "tool": "repoIndexStatus",
+      "summary": "Inspect whether the cached repo index exists and how many files/symbols/imports it contains.",
+      "workflowStages": [
+        "recon",
+        "verification"
+      ],
+      "useWhen": [
+        "Need to know whether codeQuery has a current local index.",
+        "Checking whether repo indexing ran before relying on cached code intelligence."
+      ],
+      "avoidWhen": [
+        "Need to rebuild stale data; use repoIndexBuild.",
+        "Need actual search results; use codeQuery or repoSearch."
+      ],
+      "replacesShellPatterns": [
+        "manual ls .siso/repo-index",
+        "ad hoc index file inspection"
+      ],
+      "requiredInputs": [],
+      "expectedOutputs": [
+        "exists",
+        "files",
+        "symbols",
+        "imports",
+        "builtAt"
+      ],
+      "failureModes": [
+        "status can be true while content is stale after recent edits"
+      ],
+      "relatedCapabilities": [
+        "repo-index"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation"
+      ],
+      "validationCommands": [
+        "npm run smoke:repo-index"
+      ]
+    },
+    {
+      "id": "code-query",
+      "tool": "codeQuery",
+      "summary": "Query the cached local repo index with Sourcegraph-lite filters for symbols, files, languages, paths, and imports.",
+      "workflowStages": [
+        "recon",
+        "debugging",
+        "planning"
+      ],
+      "useWhen": [
+        "Need fast indexed lookup like symbol:toolRecommend, path:router, lang:js, or imports:node:fs.",
+        "Need to narrow likely files before reading or patching."
+      ],
+      "avoidWhen": [
+        "Need exact current text after recent edits and the index may be stale; run repoIndexBuild or repoSearch.",
+        "Need full file contents; use readMany after narrowing."
+      ],
+      "replacesShellPatterns": [
+        "rg plus manual symbol filtering",
+        "find plus import grep"
+      ],
+      "requiredInputs": [
+        "query"
+      ],
+      "expectedOutputs": [
+        "results",
+        "files",
+        "symbols",
+        "imports"
+      ],
+      "failureModes": [
+        "stale index",
+        "query too broad",
+        "regex semantics are not supported in v1"
+      ],
+      "relatedCapabilities": [
+        "repo-index"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "code-intel-navigation",
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:repo-index"
+      ]
+    },
+    {
+      "id": "autopilot-fix-loop",
+      "tool": "autopilotFixLoop",
+      "summary": "Run a bounded validation/repair controller that summarizes failures and gathers context for the next patch.",
+      "workflowStages": [
+        "debugging",
+        "verification",
+        "repair"
+      ],
+      "useWhen": [
+        "A check is failing and the agent needs a compact repair packet before patching.",
+        "Need unsafe-command blocking, failure summary, and related context in one controller call."
+      ],
+      "avoidWhen": [
+        "Need a pure design plan before implementation; use autopilotPlan.",
+        "Need actual code edits; use the returned repair packet, patch manually or via a worker, then rerun."
+      ],
+      "replacesShellPatterns": [
+        "manual run-fail-search-read loops",
+        "unbounded retry loops"
+      ],
+      "requiredInputs": [
+        "command"
+      ],
+      "expectedOutputs": [
+        "outcome",
+        "iterations",
+        "failureSummary",
+        "context",
+        "suggestedNextActions"
+      ],
+      "failureModes": [
+        "does not silently edit files in v1",
+        "context can be broad if the failure summary is low signal"
+      ],
+      "relatedCapabilities": [
+        "autopilot-fix-loop",
+        "gather-context",
+        "related-checks"
+      ],
+      "relatedContracts": [],
+      "relatedBenchmarkSuites": [
+        "tool-selection-correctness"
+      ],
+      "validationCommands": [
+        "npm run smoke:autopilot-fix-loop"
+      ]
+    }
+  ]
+}

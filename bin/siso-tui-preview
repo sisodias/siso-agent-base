@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+import { spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const candidates = [
+  join(here, "..", "scripts", "tui-demo.mjs"),
+  join(process.env.SISO_AGENT_BASE_DIR || join(process.env.HOME || "", ".siso-agent-base"), "scripts", "tui-demo.mjs"),
+  join(process.cwd(), "scripts", "tui-demo.mjs"),
+];
+const mode = process.env.SISO_TUI_MODE || process.argv[2] || "app-shell";
+const width = process.env.SISO_TUI_WIDTH || process.stdout.columns || 120;
+const height = process.env.SISO_TUI_HEIGHT || process.stdout.rows || 36;
+const demoScript = candidates.find((path) => {
+  try {
+    return Boolean(path && requireExists(path));
+  } catch {
+    return false;
+  }
+});
+if (!demoScript) {
+  console.error(`Unable to find scripts/tui-demo.mjs. Checked:\n${candidates.join("\n")}`);
+  process.exit(1);
+}
+const root = dirname(dirname(demoScript));
+const args = [demoScript, mode, `--width=${width}`, `--height=${height}`];
+function requireExists(path) {
+  return spawnSync(process.execPath, ["-e", `process.exit(require('fs').existsSync(${JSON.stringify(path)}) ? 0 : 1)`]).status === 0;
+}
+
+const result = spawnSync(process.execPath, args, {
+  cwd: root,
+  stdio: "inherit",
+  env: process.env,
+});
+process.exit(result.status ?? 1);
