@@ -1,0 +1,31 @@
+export type ExtensionCatalogQuery = {
+  op?: "list" | "search" | "show" | "recommend" | "compare" | "audit-plan" | "approve" | "activate" | "deactivate" | "registry" | "approved" | "activation" | "fetch" | "store";
+  id?: string;
+  ids?: string[] | string;
+  query?: string;
+  category?: string;
+  type?: string;
+  recommendation?: string;
+  decision?: string;
+  capabilities?: string[];
+  notes?: string;
+  scope?: string;
+  profile?: string;
+  workspace?: string;
+  command?: string;
+  toolPack?: string;
+  registryPath?: string;
+  storePath?: string;
+  tarballPath?: string;
+  tarballUrl?: string;
+  version?: string;
+  integrity?: string;
+  limit?: number;
+  path?: string;
+};
+
+export declare function queryExtensionCatalog(filters?: ExtensionCatalogQuery, path?: string): unknown;
+export declare function queryExtensionCatalogAsync(filters?: ExtensionCatalogQuery, path?: string): Promise<unknown>;
+export declare function fetchExtensionIntoStore(pkg: unknown, filters?: ExtensionCatalogQuery): Promise<unknown>;
+export declare function recommendExtensions(filters?: ExtensionCatalogQuery): unknown;
+export declare function formatExtensionCatalogResult(result: unknown): string;

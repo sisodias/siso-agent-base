@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "runId": "example-source-drift-run",
+  "task": "Build Source Drift Detector MVP",
+  "startedAt": "2026-05-09T00:00:00.000Z",
+  "completedAt": "2026-05-09T00:05:00.000Z",
+  "agent": {
+    "profile": "siso-default",
+    "model": "unknown"
+  },
+  "links": {
+    "capabilityIds": ["source-drift-detector"],
+    "contractIds": ["install-runtime"],
+    "benchmarkSuiteIds": ["foundation-readiness"],
+    "testSpaceSuites": ["source-drift"]
+  },
+  "events": [
+    {
+      "type": "run.started",
+      "at": "2026-05-09T00:00:00.000Z",
+      "summary": "Started source drift detector implementation."
+    },
+    {
+      "type": "file.changed",
+      "at": "2026-05-09T00:01:00.000Z",
+      "path": "scripts/smoke-source-drift.mjs",
+      "changeKind": "created"
+    },
+    {
+      "type": "contract.matched",
+      "at": "2026-05-09T00:02:00.000Z",
+      "contractId": "install-runtime",
+      "requiredCommands": ["npm run smoke:source-drift"]
+    },
+    {
+      "type": "tool.started",
+      "at": "2026-05-09T00:03:00.000Z",
+      "tool": "bash",
+      "summary": "npm run smoke:source-drift"
+    },
+    {
+      "type": "tool.completed",
+      "at": "2026-05-09T00:03:03.000Z",
+      "tool": "bash",
+      "exitCode": 0,
+      "durationMs": 3000
+    },
+    {
+      "type": "command.validation",
+      "at": "2026-05-09T00:03:03.100Z",
+      "command": "npm run smoke:source-drift",
+      "status": "passed"
+    },
+    {
+      "type": "drift.detected",
+      "at": "2026-05-09T00:03:04.000Z",
+      "category": "install-runtime",
+      "severity": "warning",
+      "summary": "Installed runtime differs from workspace."
+    },
+    {
+      "type": "scorecard.updated",
+      "at": "2026-05-09T00:04:30.000Z",
+      "summary": "Updated safety/governance score after validation passed."
+    },
+    {
+      "type": "run.completed",
+      "at": "2026-05-09T00:05:00.000Z",
+      "status": "completed"
+    }
+  ],
+  "metrics": {
+    "toolCalls": 1,
+    "failedToolCalls": 0,
+    "filesRead": 3,
+    "filesChanged": 5,
+    "validationsRun": 1,
+    "validationsPassed": 1,
+    "childAgents": 0,
+    "contextFilteredEvents": 0,
+    "durationMs": 300000
+  },
+  "scorecard": {
+    "taskAchievement": 85,
+    "toolEfficiency": 90,
+    "contextEfficiency": 80,
+    "codeIntelligence": 50,
+    "delegation": 100,
+    "skillUsage": 50,
+    "safetyGovernance": 90,
+    "memoryImproveability": 70,
+    "operatorExperience": 75,
+    "overall": 77
+  },
+  "artifacts": [
+    "test-space/results/source-drift-report.json"
+  ],
+  "risks": [
+    {
+      "id": "install-drift-warning",
+      "severity": "warning",
+      "summary": "Install/runtime drift was detected but not strict-blocking."
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 function defaultContextRoot() {
-    return process.env.SISO_CONTEXT_MANAGER_DIR ?? join(homedir(), ".siso", "pi-harness-lab", "context-manager");
+    return process.env.SISO_CONTEXT_MANAGER_DIR ?? join(homedir(), ".siso", "agent", "context-manager");
 }
 function readJsonl(path) {
     if (!existsSync(path))

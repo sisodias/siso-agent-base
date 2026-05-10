@@ -18,7 +18,7 @@ function agentDir() {
     return process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi-bifrost", "agent");
 }
 function transcriptRoot() {
-    return process.env.SISO_TRANSCRIPT_DIR ?? join(homedir(), ".siso", "pi-harness-lab", "transcripts");
+    return process.env.SISO_TRANSCRIPT_DIR ?? join(homedir(), ".siso", "agent", "transcripts");
 }
 function dayKey(date = new Date()) {
     return date.toISOString().slice(0, 10);
@@ -143,6 +143,9 @@ function errorTextFromEvent(eventType, event) {
         return nestedMessage.errorMessage;
     if (nestedMessage?.stopReason === "error")
         return JSON.stringify(nestedMessage).slice(0, 2000);
+    const text = textFromContent(event.content ?? event.output ?? event.result);
+    if (event.isError === true && looksLikeSourceDump(text) && !event.error && !event.errorMessage)
+        return undefined;
     if (event.isError === true)
         return JSON.stringify(event).slice(0, 2000);
     if (eventType.includes("error"))
@@ -153,6 +156,12 @@ function errorTextFromEvent(eventType, event) {
         return JSON.stringify(direct).slice(0, 2000);
     const serialized = JSON.stringify(event);
     return serialized.includes("api_error") ? serialized.slice(0, 2000) : undefined;
+}
+function looksLikeSourceDump(text) {
+    const value = String(text ?? "");
+    return /\bimport\s+\{[^}]+\}\s+from\s+["'][^"']+["']/.test(value)
+        || /\bexport\s+(async\s+)?function\s+[A-Za-z0-9_$]+/.test(value)
+        || /\bconst\s+[A-Z0-9_]{3,}\s*=/.test(value);
 }
 function transcriptKind(eventType, event) {
     if (errorTextFromEvent(eventType, event))
@@ -303,6 +312,9 @@ export function appendProjectLesson(prompt, cwd) {
     return true;
 }
 export function drainCorrectionLessons(cwd, sessionId) {
+    if (!sessionId) {
+        return { appended: 0, duplicates: 0, processed: 0, remaining: readQueueLines().length, lessonsPath: projectLessonsPath(cwd) };
+    }
     const lines = readQueueLines();
     const remaining = [];
     let appended = 0;
@@ -534,7 +546,7 @@ function lifecycleStatusResult(state, options = {}) {
     };
 }
 export default function sisoLifecycleExtension(pi) {
-    const state = {
+    const createLifecycleState = () => ({
         cwd: process.cwd(),
         prompt: "",
         sessionId: "unknown",
@@ -549,12 +561,26 @@ export default function sisoLifecycleExtension(pi) {
         errors: 0,
         latestError: undefined,
         touchedFiles: new Set(),
+    });
+    const states = new Map();
+    const stateFor = (ctx, event) => {
+        const sessionId = sessionIdFrom(event ?? {}, ctx);
+        const key = sessionId === "unknown" ? "__no_session__" : sessionId;
+        let state = states.get(key);
+        if (!state) {
+            state = createLifecycleState();
+            state.sessionId = sessionId;
+            states.set(key, state);
+        }
+        return state;
     };
     const publish = (ctx) => {
+        const state = stateFor(ctx);
         state.queuedCorrections = readQueueLines()
             .map(parseQueueLine)
             .filter((entry) => Boolean(entry))
             .filter((entry) => !entry.cwd || entry.cwd === state.cwd)
+            .filter((entry) => state.sessionId === "unknown" ? false : entry.session_id === state.sessionId)
             .length;
         if (process.env.SISO_LIFECYCLE_UI !== "compact")
             return;
@@ -562,6 +588,7 @@ export default function sisoLifecycleExtension(pi) {
         ctx?.ui?.setStatus?.("siso-lifecycle", `checkpoint:${state.checkpoints} reflect:${state.corrections} queued:${state.queuedCorrections} lessons:${state.lessons} errors:${state.errors} log:${state.transcriptRows} restore:${restore}`);
     };
     pi.on("before_agent_start", (event, ctx) => {
+        const state = stateFor(ctx, event);
         captureTranscriptEvent(state, "before_agent_start", event, ctx);
         state.cwd = projectRoot(event);
         state.sessionId = sessionIdFrom(event, ctx);
@@ -579,6 +606,7 @@ export default function sisoLifecycleExtension(pi) {
     pi.on("input", (event, ctx) => {
         if (event.source === "extension")
             return { action: "continue" };
+        const state = stateFor(ctx, event);
         captureTranscriptEvent(state, "input", event, ctx);
         state.cwd = projectRoot(event);
         const prompt = promptTextFromInputEvent(event);
@@ -593,23 +621,27 @@ export default function sisoLifecycleExtension(pi) {
         return { action: "continue" };
     });
     pi.on("before_provider_request", (event, ctx) => {
+        const state = stateFor(ctx, event);
         captureTranscriptEvent(state, "before_provider_request", event, ctx);
         state.lastProviderSummary = summarizeProviderPayload(event.payload);
         publish(ctx);
     });
     for (const eventName of ["session_start", "session_before_switch", "session_before_fork", "session_before_tree", "session_tree", "model_select", "user_bash", "after_provider_response", "message_end", "turn_end", "agent_end", "tool_execution_start", "tool_execution_update", "tool_execution_end", "tool_result"]) {
         pi.on(eventName, (event, ctx) => {
+            const state = stateFor(ctx, event);
             captureTranscriptEvent(state, eventName, event, ctx);
             publish(ctx);
         });
     }
     pi.on("tool_call", (event, ctx) => {
+        const state = stateFor(ctx, event);
         captureTranscriptEvent(state, "tool_call", event, ctx);
         trackTouchedFile(state, event);
         publish(ctx);
     });
     for (const eventName of ["pre_compact", "before_compact", "session_before_compact", "session_compact", "session_end", "session_shutdown", "stop"]) {
         pi.on(eventName, (event, ctx) => {
+            const state = stateFor(ctx, event);
             captureTranscriptEvent(state, eventName, event, ctx);
             const sessionId = sessionIdFrom(event, ctx);
             const drain = drainCorrectionLessons(state.cwd, sessionId === "unknown" ? undefined : sessionId);
@@ -620,11 +652,11 @@ export default function sisoLifecycleExtension(pi) {
     }
     pi.registerCommand?.("siso-lifecycle-status", {
         description: "Print Pi lifecycle checkpoint and reflection capture status",
-        handler: async () => lifecycleStatusResult(state),
+        handler: async (_args, ctx) => lifecycleStatusResult(stateFor(ctx)),
     });
     pi.registerCommand?.("siso-transcripts", {
         description: "Print local Pi transcript/error ledger status, tail, or errors",
-        handler: async (args) => transcriptStatusResult(state, Array.isArray(args) ? args : String(args ?? "").split(/\s+/).filter(Boolean)),
+        handler: async (args, ctx) => transcriptStatusResult(stateFor(ctx), Array.isArray(args) ? args : String(args ?? "").split(/\s+/).filter(Boolean)),
     });
     pi.registerCommand?.("exit", {
         description: "Exit Pi Codex",
@@ -658,6 +690,7 @@ export default function sisoLifecycleExtension(pi) {
             additionalProperties: false,
         },
         execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
+            const state = stateFor(ctx);
             publish(ctx);
             return lifecycleStatusResult(state, {
                 includeContent: params?.includeContent === true,

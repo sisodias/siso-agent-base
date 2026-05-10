@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "purpose": "Capability-linked test matrix for SISO Agent Base.",
+  "suites": [
+    {
+      "id": "test-space-structure",
+      "capabilityId": "test-space",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:test-space"
+      ],
+      "scenario": "scenarios/test-space-structure.md",
+      "notes": "Validates the test-space schema, links, scenarios, coverage, and command references."
+    },
+    {
+      "id": "capability-registry",
+      "capabilityId": "capability-registry",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:capabilities"
+      ],
+      "scenario": "scenarios/capability-registry.md",
+      "notes": "Ensures feature memory stays valid."
+    },
+    {
+      "id": "release-metadata",
+      "capabilityId": "release-metadata-smoke",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:release"
+      ],
+      "scenario": "scenarios/release-metadata.md",
+      "notes": "Catches version/release/changelog drift."
+    },
+    {
+      "id": "context-tools",
+      "capabilityId": "context-filtering",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:context",
+        "npm run smoke:context-details",
+        "npm run smoke:context-explain",
+        "npm run smoke:context-tier"
+      ],
+      "scenario": "scenarios/context-tools.md",
+      "notes": "Protects context filtering and retrieval from raw-output regressions."
+    },
+    {
+      "id": "subagent-surfaces",
+      "capabilityId": "child-agent-spawn",
+      "status": "manual-until-subagents-fixed",
+      "type": "smoke/manual",
+      "commands": [
+        "npm run smoke:child-control",
+        "npm run smoke:child-notifications",
+        "npm run smoke:subagent-lifecycle",
+        "npm run smoke:subagents",
+        "npm run smoke:spawn-result",
+        "npm run smoke:composite-result"
+      ],
+      "scenario": "scenarios/subagent-surfaces.md",
+      "notes": "Currently marked manual because live subagents are known broken in this session."
+    },
+    {
+      "id": "session-scoped-agent-runtime",
+      "capabilityId": "session-scoped-agent-runtime",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:session-store",
+        "npm run smoke:status-widget"
+      ],
+      "scenario": "scenarios/session-scoped-agent-runtime.md",
+      "notes": "Protects per-chat agent ownership, compact event-count projections, and stale cross-session HUD cleanup."
+    },
+    {
+      "id": "doctor-and-launcher",
+      "capabilityId": "siso-doctor",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:doctor",
+        "npm run smoke:wrapper",
+        "npm run smoke:where"
+      ],
+      "scenario": "scenarios/doctor-and-launcher.md",
+      "notes": "Checks operational entry points and install diagnostics."
+    },
+    {
+      "id": "agent-contracts",
+      "capabilityId": "agent-contracts",
+      "status": "active",
+      "type": "smoke/research",
+      "commands": [
+        "npm run smoke:contracts",
+        "node scripts/smoke-contracts.mjs --changed"
+      ],
+      "scenario": "scenarios/agent-contracts.md",
+      "notes": "Validates draft contract registry shape and required command references; research doc captures source patterns."
+    },
+    {
+      "id": "contract-diff-report",
+      "capabilityId": "agent-contracts",
+      "status": "active",
+      "type": "smoke/diff-audit",
+      "commands": [
+        "node scripts/smoke-contracts.mjs --changed"
+      ],
+      "scenario": "scenarios/contract-diff-report.md",
+      "notes": "Generates JSON/Markdown report of matched contracts and required validation from current git diff."
+    },
+    {
+      "id": "agent-tooling",
+      "name": "Agent Tooling Smoke",
+      "capabilityId": "agent-tooling-roadmap",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:agent-tooling"
+      ],
+      "status": "active",
+      "scenario": "scenarios/agent-tooling.md",
+      "notes": "Validates structured tooling actions for faster coding-agent repo navigation, context gathering, checks, docs updates, and atomic patches."
+    },
+    {
+      "id": "source-drift",
+      "capabilityId": "source-drift-detector",
+      "status": "active",
+      "type": "smoke/drift",
+      "commands": [
+        "npm run smoke:source-drift"
+      ],
+      "scenario": "scenarios/source-drift.md",
+      "notes": "Checks version/source/install/capability/test/contract drift; install mismatch is warning by default."
+    },
+    {
+      "id": "doctor-readiness",
+      "capabilityId": "doctor-readiness",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:doctor-readiness"
+      ],
+      "scenario": "scenarios/doctor-readiness.md",
+      "notes": "Validates siso-doctor drift/contracts/readiness subcommands."
+    },
+    {
+      "id": "harness-benchmark",
+      "capabilityId": "harness-benchmark-scorecard",
+      "status": "active",
+      "type": "smoke/benchmark-schema",
+      "commands": [
+        "npm run smoke:harness-benchmark"
+      ],
+      "scenario": "scenarios/harness-benchmark.md",
+      "notes": "Validates benchmark plan, metric categories, task files, command references, and scorecard schema."
+    },
+    {
+      "id": "flight-recorder",
+      "capabilityId": "flight-recorder",
+      "status": "active",
+      "type": "smoke/schema",
+      "commands": [
+        "npm run smoke:flight-recorder",
+        "npm run record:doctor-readiness-flight",
+        "npm run analyze:flight-recorder",
+        "npm run record:context-filter-flight",
+        "npm run record:code-intel-flight"
+      ],
+      "scenario": "scenarios/flight-recorder.md",
+      "notes": "Validates flight recorder schema and example run traces."
+    },
+    {
+      "id": "tool-scenario-cards",
+      "capabilityId": "tool-scenario-cards",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:tool-scenario-cards"
+      ],
+      "scenario": "scenarios/tool-scenario-cards.md",
+      "notes": "Validates scenario-first tool selection metadata and links to capabilities, contracts, benchmark suites, and validation commands."
+    },
+    {
+      "id": "autopilot-verifier-plan",
+      "capabilityId": "autopilot-verifier-plan",
+      "status": "active",
+      "type": "smoke/design-runtime-slice",
+      "commands": [
+        "npm run smoke:autopilot-verifier",
+        "npm run smoke:autopilot-plan",
+        "npm run smoke:tool-selection-eval"
+      ],
+      "scenario": "scenarios/autopilot-verifier-plan.md",
+      "notes": "Validates the controller/worker/read-only-verifier design contract, no-edit autopilotPlan runtime slice, and discovery through tool-selection evals."
+    },
+    {
+      "id": "output-style-preflight",
+      "capabilityId": "output-style-preflight",
+      "status": "active",
+      "type": "smoke/ux",
+      "commands": [
+        "npm run smoke:output-style"
+      ],
+      "scenario": "scenarios/output-style-preflight.md",
+      "notes": "Validates SISO preflight message and system prompt output-style guidance."
+    },
+    {
+      "id": "native-output-polish",
+      "capabilityId": "native-output-polish",
+      "status": "active",
+      "type": "smoke/ux-renderer",
+      "commands": [
+        "npm run smoke:native-output-polish"
+      ],
+      "scenario": "scenarios/native-output-polish.md",
+      "notes": "Validates native PI assistant/tool renderer polish for TXT wrappers and compact fallback output."
+    },
+    {
+      "id": "related-checks",
+      "capabilityId": "related-checks",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:related-checks"
+      ],
+      "scenario": "scenarios/related-checks.md",
+      "notes": "Validates task/path/capability based check recommendations."
+    },
+    {
+      "id": "gather-context",
+      "capabilityId": "gather-context",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:gather-context"
+      ],
+      "scenario": "scenarios/gather-context.md",
+      "notes": "Validates task-aware context gathering from recommendations, ranked maps, evidence reads, and related checks."
+    },
+    {
+      "id": "repo-index",
+      "capabilityId": "repo-index",
+      "status": "active",
+      "type": "smoke",
+      "commands": [
+        "npm run smoke:repo-index"
+      ],
+      "scenario": "scenarios/repo-index.md",
+      "notes": "Validates Sourcegraph-lite local repo indexing for files, symbols, imports, status, and query."
+    },
+    {
+      "id": "autopilot-fix-loop",
+      "capabilityId": "autopilot-fix-loop",
+      "status": "active",
+      "type": "smoke/controller-runtime-slice",
+      "commands": [
+        "npm run smoke:autopilot-fix-loop"
+      ],
+      "scenario": "scenarios/autopilot-fix-loop.md",
+      "notes": "Validates bounded check execution, unsafe command blocking, failure summarization, and context gathering for repair packets."
+    }
+  ]
+}

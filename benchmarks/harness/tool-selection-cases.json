@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-05-09",
+  "purpose": "Deterministic eval cases for Tool Scenario Card recommendation quality.",
+  "cases": [
+    {
+      "id": "find-router-actions",
+      "task": "Find where SISO router actions are implemented",
+      "expectedTools": ["repoSearch", "briefRepo", "contextPack"],
+      "expectedPacks": ["repo-navigation"],
+      "avoidTools": ["runCheck", "workspaceDiff"],
+      "intent": "codebase exploration"
+    },
+    {
+      "id": "known-files-read",
+      "task": "Read package.json and VERSION so I can inspect release metadata",
+      "expectedTools": ["readMany"],
+      "expectedPacks": ["repo-navigation"],
+      "avoidTools": ["repoSearch", "runCheck"],
+      "intent": "inspection"
+    },
+    {
+      "id": "failing-smoke",
+      "task": "The smoke test is failing; run the relevant check and summarize the error",
+      "expectedTools": ["runCheck"],
+      "expectedPacks": ["workspace-validation"],
+      "avoidTools": ["workspaceDiff", "capabilitySearch"],
+      "intent": "verification/debugging"
+    },
+    {
+      "id": "review-changed-files",
+      "task": "Review what files changed and show me the diff summary before final response",
+      "expectedTools": ["workspaceStatus", "workspaceDiff"],
+      "expectedPacks": ["workspace-validation"],
+      "avoidTools": ["repoSearch", "doctorReadiness"],
+      "intent": "review"
+    },
+    {
+      "id": "capability-exists",
+      "task": "Check whether we already have a capability for lazy tool discovery before building anything",
+      "expectedTools": ["capabilitySearch"],
+      "expectedPacks": ["docs-capabilities"],
+      "avoidTools": ["runCheck", "workspaceDiff"],
+      "intent": "documentation/release"
+    },
+    {
+      "id": "runtime-health",
+      "task": "Verify SISO runtime health, gateway readiness, and install doctor status",
+      "expectedTools": ["doctorReadiness"],
+      "expectedPacks": ["operations-readiness"],
+      "avoidTools": ["repoSearch", "readMany"],
+      "intent": "operations/readiness"
+    },
+    {
+      "id": "source-runtime-drift",
+      "task": "Check if the installed runtime is stale or drifted from canonical source",
+      "expectedTools": ["sourceDrift"],
+      "expectedPacks": ["operations-readiness"],
+      "avoidTools": ["repoSearch", "capabilitySearch"],
+      "intent": "operations/readiness"
+    },
+    {
+      "id": "contract-review",
+      "task": "Changing router behavior may affect contracts; check contract drift and validation expectations",
+      "expectedTools": ["contractDiff"],
+      "expectedPacks": ["workspace-validation", "docs-capabilities"],
+      "avoidTools": ["doctorReadiness"],
+      "intent": "review"
+    },
+    {
+      "id": "post-implementation-verifier",
+      "task": "The worker says the implementation is done; build an autopilot plan for a Minimax verifier to check the specification, run required checks, and feed back compact fixes if it is not done",
+      "expectedTools": ["autopilotPlan"],
+      "expectedPacks": ["workspace-validation"],
+      "avoidTools": ["repoSearch", "readMany"],
+      "intent": "verification/review"
+    }
+  ]
+}

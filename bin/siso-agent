@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workspace="${SISO_WORKSPACE:-$(pwd)}"
+agents_dir="$workspace/.siso/agents"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  siso agent inspect <agent-id>
+  siso agent run <agent-id> [--dry-run]
+  siso agent list
+  siso-agent inspect <agent-id>
+  siso-agent run <agent-id> [--dry-run]
+  siso-agent list
+
+Persistent agents are file-backed teams under .siso/agents/<agent-id>/.
+Use `siso agent ...` from the main CLI, or `siso-agent ...` directly in scripts.
+USAGE
+}
+
+die() {
+  echo "siso agent: $*" >&2
+  exit 1
+}
+
+agent_dir() {
+  local id="$1"
+  [[ -n "$id" ]] || die "Missing agent id"
+  [[ "$id" != *"/"* && "$id" != *".."* ]] || die "Invalid agent id: $id"
+  local dir="$agents_dir/$id"
+  [[ -d "$dir" ]] || die "Unknown persistent agent: $id"
+  echo "$dir"
+}
+
+first_section() {
+  local file="$1"
+  local heading="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v heading="$heading" '
+    $0 == heading { capture=1; next }
+    capture && /^## / { exit }
+    capture && NF { print }
+  ' "$file" | head -20
+}
+
+tail_section() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+  tail -40 "$file" | sed '/^[[:space:]]*$/d'
+}
+
+latest_file() {
+  local dir="$1"
+  find "$dir" -maxdepth 1 -type f -name '*.md' ! -name 'README.md' -print 2>/dev/null | sort | tail -1
+}
+
+list_items() {
+  local dir="$1"
+  if [[ -d "$dir" ]]; then
+    find "$dir" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | sort | sed "s#^$workspace/##" | head -10
+  fi
+}
+
+print_file_excerpt() {
+  local label="$1"
+  local file="$2"
+  local max_lines="${3:-60}"
+  echo "## $label"
+  echo
+  if [[ -f "$file" ]]; then
+    sed -n "1,${max_lines}p" "$file"
+  else
+    echo "Missing: ${file#$workspace/}"
+  fi
+  echo
+}
+
+inspect_agent() {
+  local id="$1"
+  local dir
+  dir="$(agent_dir "$id")"
+  local latest_run
+  latest_run="$(latest_file "$dir/runs")"
+
+  echo "# Agent Inspection: $id"
+  echo
+  print_file_excerpt "Identity" "$dir/agent.md" 40
+
+  echo "## Current goal/objectives"
+  echo
+  first_section "$dir/goals.md" "## Current Goal"
+  first_section "$dir/goals.md" "## Current Objectives"
+  first_section "$dir/goals.md" "## Success Criteria"
+  echo
+
+  echo "## Recent work"
+  echo
+  tail_section "$dir/worklog.md"
+  echo
+
+  echo "## Recent changes"
+  echo
+  tail_section "$dir/changelog.md"
+  echo
+
+  echo "## Memory summary"
+  echo
+  tail_section "$dir/memory.md"
+  echo
+
+  echo "## Controlled paths"
+  echo
+  tail_section "$dir/controlled-paths.md"
+  echo
+
+  print_file_excerpt "Metrics" "$dir/metrics.md" 40
+
+  echo "## Open inbox/outbox items"
+  echo
+  echo "Inbox:"
+  list_items "$dir/inbox" || true
+  echo
+  echo "Outbox:"
+  list_items "$dir/outbox" || true
+  echo
+
+  echo "## Latest run report"
+  echo
+  if [[ -n "$latest_run" ]]; then
+    echo "${latest_run#$workspace/}"
+    echo
+    sed -n '1,80p' "$latest_run"
+  else
+    echo "No run reports yet."
+  fi
+  echo
+
+  echo "## Next suggested action"
+  echo
+  if [[ -f "$dir/outbox/next-run-request.md" ]]; then
+    sed -n '1,80p' "$dir/outbox/next-run-request.md"
+  elif [[ -n "$latest_run" ]]; then
+    first_section "$latest_run" "## Next recommendation"
+  else
+    echo "Run: siso agent run $id"
+  fi
+}
+
+run_prompt() {
+  local id="$1"
+  local dir="$2"
+  local run_request="$3"
+  local latest_run="$4"
+  local latest_inbox="$5"
+  local latest_outbox="$6"
+
+  cat <<PROMPT
+# Persistent Agent Run Prompt: $id
+
+You are the durable SISO persistent agent/team at:
+
+\`$dir/\`
+
+Read durable state before acting:
+
+- agent.md
+- goals.md
+- memory.md
+- controlled-paths.md
+- worklog.md
+- changelog.md
+- metrics.md
+- latest inbox item: ${latest_inbox:-none}
+- latest outbox item or next-run request: ${latest_outbox:-none}
+- latest run report: ${latest_run:-none}
+- queued run request: ${run_request:-dry-run, not written}
+
+Execute one useful scoped continuation chunk toward the current goal.
+
+Required output contract:
+
+- Write a timestamped run report in runs/.
+- Append worklog.md with what happened and what remains.
+- Append changelog.md if user-visible or repo files changed.
+- Update memory.md only for durable knowledge that future sessions need.
+- Update metrics.md with an approximate run count/token/work note.
+- Write an optional next-run request at outbox/next-run-request.md when another continuation run is useful.
+
+Rules:
+
+- Stay within controlled-paths.md unless the main session explicitly approves more scope.
+- Separate durable facts from transient reasoning.
+- Do not silently stop if work remains; leave the next action inspectable.
+PROMPT
+}
+
+run_agent() {
+  local id="$1"
+  local dry_run="$2"
+  local dir
+  dir="$(agent_dir "$id")"
+  local latest_run latest_inbox latest_outbox run_request
+  latest_run="$(latest_file "$dir/runs")"
+  latest_inbox="$(latest_file "$dir/inbox")"
+  latest_outbox="$(latest_file "$dir/outbox")"
+
+  if [[ "$dry_run" == "1" ]]; then
+    run_prompt "$id" "$dir" "" "$latest_run" "$latest_inbox" "$latest_outbox"
+    return 0
+  fi
+
+  mkdir -p "$dir/runs"
+  run_request="$dir/runs/$(date '+%Y-%m-%d-%H%M%S')-activation-request.md"
+  run_prompt "$id" "$dir" "$run_request" "$latest_run" "$latest_inbox" "$latest_outbox" > "$run_request"
+  echo "Queued persistent agent run request: ${run_request#$workspace/}"
+  echo
+  cat "$run_request"
+}
+
+list_agents() {
+  [[ -d "$agents_dir" ]] || die "No .siso/agents directory in $workspace"
+  find "$agents_dir" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null \
+    | sed "s#^$agents_dir/##" \
+    | grep -Ev '^(templates|workflows|_runtime)$' \
+    | sort
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  inspect)
+    inspect_agent "${1:-}"
+    ;;
+  run)
+    id="${1:-}"
+    [[ -n "$id" ]] || { usage; exit 2; }
+    shift || true
+    dry_run=0
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --dry-run) dry_run=1 ;;
+        *) die "Unknown run option: $1" ;;
+      esac
+      shift
+    done
+    run_agent "$id" "$dry_run"
+    ;;
+  list)
+    list_agents
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac

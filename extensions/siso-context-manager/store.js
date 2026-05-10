@@ -2,7 +2,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statS
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 export function defaultRoot() {
-    return process.env.SISO_CONTEXT_MANAGER_DIR ?? join(homedir(), ".siso", "pi-harness-lab", "context-manager");
+    return process.env.SISO_CONTEXT_MANAGER_DIR ?? join(homedir(), ".siso", "agent", "context-manager");
 }
 export function contextPaths(root = defaultRoot()) {
     return {
